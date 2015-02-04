@@ -1,6 +1,6 @@
 package com.arondor.commons.jintruder;
 
-public class TraceEvent
+public class TraceEventBucket
 {
     public static final int DEPTH_SIZE = 1024; // 32 * 1024 * 1024;
 
@@ -12,7 +12,7 @@ public class TraceEvent
 
     private int cursor = 0;
 
-    public TraceEvent(long pid)
+    public TraceEventBucket(long pid)
     {
         this.pid = pid;
     }

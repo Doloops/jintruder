@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ClassName
+public class ClassInfo
 {
     private final String className;
 
@@ -12,27 +12,26 @@ public class ClassName
     {
         return className;
     }
- 
-    public ClassName(String className)
+
+    public ClassInfo(String className)
     {
         this.className = className;
     }
-    
-    private Map<String, MethodCall> methodCalls = new HashMap<String, MethodCall>();
-    
-    public MethodCall findMethod(String methodName)
+
+    private Map<String, MethodInfo> methodCalls = new HashMap<String, MethodInfo>();
+
+    public MethodInfo findMethod(String methodName)
     {
-        MethodCall methodCall = methodCalls.get(methodName);
-        if ( methodCall == null )
+        MethodInfo methodCall = methodCalls.get(methodName);
+        if (methodCall == null)
         {
-            methodCall = new MethodCall(this, methodName);
+            methodCall = new MethodInfo(this, methodName);
             methodCalls.put(methodName, methodCall);
         }
-        
         return methodCall;
     }
-    
-    public Collection<MethodCall> getMethodCalls()
+
+    public Collection<MethodInfo> getMethodCalls()
     {
         return methodCalls.values();
     }

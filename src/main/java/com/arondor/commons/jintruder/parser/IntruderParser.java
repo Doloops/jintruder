@@ -10,12 +10,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.arondor.commons.jintruder.collector.model.ClassName;
-import com.arondor.commons.jintruder.collector.model.MethodCall;
+import com.arondor.commons.jintruder.collector.model.CallInfo;
+import com.arondor.commons.jintruder.collector.model.ClassInfo;
+import com.arondor.commons.jintruder.collector.model.MethodInfo;
 import com.arondor.commons.jintruder.collector.model.MethodStack;
 import com.arondor.commons.jintruder.collector.model.MethodStackItem;
-import com.arondor.commons.jintruder.collector.model.MethodCall.CallInfo;
 
+@Deprecated
 public class IntruderParser
 {
     public IntruderParser()
@@ -23,20 +24,21 @@ public class IntruderParser
 
     }
 
-    private Map<String, ClassName> classMap = new HashMap<String, ClassName>();
+    private Map<String, ClassInfo> classMap = new HashMap<String, ClassInfo>();
 
-    protected ClassName findClassName(String className)
+    protected ClassInfo findClassName(String className)
     {
-        ClassName clazz = classMap.get(className);
+        ClassInfo clazz = classMap.get(className);
         if (clazz == null)
         {
-            clazz = new ClassName(className);
+            clazz = new ClassInfo(className);
             classMap.put(className, clazz);
         }
         return clazz;
     }
 
-    protected MethodCall findMethodCall(String methodCompleteName)
+    @Deprecated
+    protected MethodInfo findMethodCall(String methodCompleteName)
     {
         int pfx = methodCompleteName.lastIndexOf(".");
         if (pfx == -1)
@@ -79,21 +81,23 @@ public class IntruderParser
         }
     }
 
-    private Map<Integer, MethodCall> methodReferenceMap = new ConcurrentHashMap<Integer, MethodCall>();
+    private Map<Integer, MethodInfo> methodReferenceMap = new ConcurrentHashMap<Integer, MethodInfo>();
 
+    @Deprecated
     public void registerMethodReference(int referenceId, String className, String methodName)
     {
         if (methodReferenceMap.containsKey(referenceId))
         {
             throw new IllegalArgumentException("Already registered : " + referenceId);
         }
-        MethodCall methodCall = findClassName(className).findMethod(methodName);
+        MethodInfo methodCall = findClassName(className).findMethod(methodName);
         methodReferenceMap.put(referenceId, methodCall);
     }
 
+    @Deprecated
     public synchronized void addCall(long time, long pid, boolean enter, int referenceId)
     {
-        MethodCall methodCall = methodReferenceMap.get(referenceId);
+        MethodInfo methodCall = methodReferenceMap.get(referenceId);
         if (methodCall == null)
         {
             System.err.println("Could not resolve : " + referenceId);
@@ -102,13 +106,15 @@ public class IntruderParser
         addCall(time, pid, enter, methodCall);
     }
 
+    @Deprecated
     public synchronized void addCall(long time, long pid, boolean enter, String method)
     {
-        MethodCall methodCall = method.equals(".") ? null : findMethodCall(method);
+        MethodInfo methodCall = method.equals(".") ? null : findMethodCall(method);
         addCall(time, pid, enter, methodCall);
     }
 
-    public synchronized final void addCall(long time, long pid, boolean enter, MethodCall methodCall)
+    @Deprecated
+    public synchronized final void addCall(long time, long pid, boolean enter, MethodInfo methodCall)
     {
         if (enter && methodCall == null)
         {
@@ -125,7 +131,7 @@ public class IntruderParser
             }
             else
             {
-                MethodCall parent = methodStack.peek().getMethodCall();
+                MethodInfo parent = methodStack.peek().getMethodCall();
                 parent.addSubCall(methodCall);
             }
             methodStack.push(new MethodStackItem(methodCall, time));
@@ -166,7 +172,7 @@ public class IntruderParser
 
             if (!methodStack.isEmpty())
             {
-                MethodCall caller = methodStack.peek().getMethodCall();
+                MethodInfo caller = methodStack.peek().getMethodCall();
                 caller.appendCallerTime(methodCall, timeSpent);
             }
         }
@@ -209,13 +215,13 @@ public class IntruderParser
         return className.replace('/', '.');
     }
 
-    private void dump(PrintStream printStream, MethodCall methodCall)
+    private void dump(PrintStream printStream, MethodInfo methodCall)
     {
         printStream.println("fn=" + protectMethodName(methodCall.getMethodName()));
         printStream.println("0 " + methodCall.getPrivateTime());
-        for (Map.Entry<MethodCall, CallInfo> entry : methodCall.getSubCalls())
+        for (Map.Entry<MethodInfo, CallInfo> entry : methodCall.getSubCalls())
         {
-            MethodCall subCall = entry.getKey();
+            MethodInfo subCall = entry.getKey();
             printStream.println("cfl=" + protectClassName(subCall.getClassName().getClassName()));
             printStream.println("cfn=" + protectMethodName(subCall.getMethodName()));
             printStream.println("calls=" + entry.getValue().getNumber() + " " + "0");
@@ -256,10 +262,10 @@ public class IntruderParser
         // motherCall.getClassName().getClassName());
         // dump(printStream, motherCall);
 
-        for (ClassName className : classMap.values())
+        for (ClassInfo className : classMap.values())
         {
             printStream.println("fl=" + protectClassName(className.getClassName()));
-            for (MethodCall methodCall : className.getMethodCalls())
+            for (MethodInfo methodCall : className.getMethodCalls())
             {
                 dump(printStream, methodCall);
             }

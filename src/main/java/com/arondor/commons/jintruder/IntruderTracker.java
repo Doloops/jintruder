@@ -8,13 +8,15 @@ import java.util.concurrent.TimeUnit;
 import com.arondor.commons.jintruder.collector.CacheGrindIntruderCollector;
 import com.arondor.commons.jintruder.collector.IntruderCollector;
 
-public class IntruderReferenceTracer
+public class IntruderTracker
 {
-    private static boolean VERBOSE = false;
+    private static final boolean VERBOSE = false;
+
+    private static final boolean ASYNC_PROCESSING = true;
 
     private long intruderPeriodicDumpInterval = 0;
 
-    public IntruderReferenceTracer()
+    public IntruderTracker()
     {
         String sInterval = System.getProperty("jintruder.dumpInterval");
         if (sInterval != null)
@@ -63,7 +65,7 @@ public class IntruderReferenceTracer
                 if (processActiveQueues)
                 {
                     log("[INTRUDER] : Processing " + activeQueue.size() + " per-thread active queues...");
-                    for (TraceEvent activeEvent : activeQueue.values())
+                    for (TraceEventBucket activeEvent : activeQueue.values())
                     {
                         activeEvent.visit(traceEventVisitor);
                     }
@@ -92,7 +94,7 @@ public class IntruderReferenceTracer
 
     private static final boolean DUMP_EVENTS = false;
 
-    protected final TraceEvent.Visitor traceEventVisitor = new TraceEvent.Visitor()
+    protected final TraceEventBucket.Visitor traceEventVisitor = new TraceEventBucket.Visitor()
     {
         public void visit(int methodReference, long pid, long time, boolean enter)
         {
@@ -106,11 +108,11 @@ public class IntruderReferenceTracer
 
     protected static class TraceEventProcessor implements Runnable
     {
-        private final TraceEvent traceEvent;
+        private final TraceEventBucket traceEvent;
 
-        private final TraceEvent.Visitor visitor;
+        private final TraceEventBucket.Visitor visitor;
 
-        public TraceEventProcessor(TraceEvent traceEvent, TraceEvent.Visitor visitor)
+        public TraceEventProcessor(TraceEventBucket traceEvent, TraceEventBucket.Visitor visitor)
         {
             this.traceEvent = traceEvent;
             this.visitor = visitor;
@@ -133,33 +135,41 @@ public class IntruderReferenceTracer
     /**
      * Singleton and static call part
      */
-    private static IntruderReferenceTracer SINGLETON = new IntruderReferenceTracer();
+    private static IntruderTracker SINGLETON = new IntruderTracker();
 
-    protected static IntruderReferenceTracer getIntruderReferenceTracerSingleton()
+    protected static IntruderTracker getIntruderReferenceTracerSingleton()
     {
         return SINGLETON;
     }
 
-    private ThreadLocal<TraceEvent> threadLocalEvent = new ThreadLocal<TraceEvent>();
+    private ThreadLocal<TraceEventBucket> threadLocalEvent = new ThreadLocal<TraceEventBucket>();
 
-    private Map<Thread, TraceEvent> activeQueue = new java.util.concurrent.ConcurrentHashMap<Thread, TraceEvent>();
+    private Map<Thread, TraceEventBucket> activeQueue = new java.util.concurrent.ConcurrentHashMap<Thread, TraceEventBucket>();
 
     private final void startFinishMethod(int methodId, boolean startOrFinish)
     {
-        TraceEvent traceEvent = threadLocalEvent.get();
-        if (traceEvent == null)
+        if (ASYNC_PROCESSING)
         {
-            traceEvent = new TraceEvent(Thread.currentThread().getId());
-            activeQueue.put(Thread.currentThread(), traceEvent);
-            threadLocalEvent.set(traceEvent);
-        }
-        traceEvent.addEvent(methodId, System.nanoTime(), startOrFinish);
-        if (traceEvent.isFull())
-        {
-            activeQueue.remove(Thread.currentThread());
-            delayedRegistry.submit(new TraceEventProcessor(traceEvent, SINGLETON.traceEventVisitor));
-            threadLocalEvent.set(null);
+            TraceEventBucket traceEvent = threadLocalEvent.get();
+            if (traceEvent == null)
+            {
+                traceEvent = new TraceEventBucket(Thread.currentThread().getId());
+                activeQueue.put(Thread.currentThread(), traceEvent);
+                threadLocalEvent.set(traceEvent);
+            }
+            traceEvent.addEvent(methodId, System.nanoTime(), startOrFinish);
+            if (traceEvent.isFull())
+            {
+                activeQueue.remove(Thread.currentThread());
+                delayedRegistry.submit(new TraceEventProcessor(traceEvent, traceEventVisitor));
+                threadLocalEvent.set(null);
 
+                mayPeriodicDump();
+            }
+        }
+        else
+        {
+            traceEventVisitor.visit(methodId, Thread.currentThread().getId(), System.nanoTime(), startOrFinish);
             mayPeriodicDump();
         }
     }

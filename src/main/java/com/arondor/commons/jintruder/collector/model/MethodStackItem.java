@@ -2,17 +2,17 @@ package com.arondor.commons.jintruder.collector.model;
 
 public class MethodStackItem
 {
-    private final MethodCall methodCall;
+    private final MethodInfo methodCall;
 
     private final long startTime;
 
-    public MethodStackItem(MethodCall methodCall, long startTime)
+    public MethodStackItem(MethodInfo methodCall, long startTime)
     {
         this.methodCall = methodCall;
         this.startTime = startTime;
     }
 
-    public MethodCall getMethodCall()
+    public MethodInfo getMethodCall()
     {
         return methodCall;
     }

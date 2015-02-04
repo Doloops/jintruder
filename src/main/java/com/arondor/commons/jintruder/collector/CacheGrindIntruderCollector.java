@@ -6,19 +6,26 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.arondor.commons.jintruder.collector.model.ClassName;
-import com.arondor.commons.jintruder.collector.model.MethodCall;
-import com.arondor.commons.jintruder.collector.model.MethodCall.CallInfo;
+import com.arondor.commons.jintruder.collector.model.CallInfo;
+import com.arondor.commons.jintruder.collector.model.ClassInfo;
+import com.arondor.commons.jintruder.collector.model.MethodInfo;
 import com.arondor.commons.jintruder.collector.model.MethodStack;
 import com.arondor.commons.jintruder.collector.model.MethodStackItem;
 
 public class CacheGrindIntruderCollector implements IntruderCollector
 {
+    private boolean dumpUncleanThreads = false;
+
     private Map<Long, MethodStack> perThreadStack = new HashMap<Long, MethodStack>();
 
-    private Map<String, ClassName> classMap = new HashMap<String, ClassName>();
+    private Map<String, ClassInfo> classMap = new HashMap<String, ClassInfo>();
 
-    private Map<Integer, MethodCall> methodReferenceMap = new ConcurrentHashMap<Integer, MethodCall>();
+    private Map<Integer, MethodInfo> methodReferenceMap = new ConcurrentHashMap<Integer, MethodInfo>();
+
+    public CacheGrindIntruderCollector()
+    {
+
+    }
 
     private final MethodStack getPerThreadStack(long pid)
     {
@@ -39,18 +46,18 @@ public class CacheGrindIntruderCollector implements IntruderCollector
         nextMethodReference++;
         int referenceId = nextMethodReference;
 
-        MethodCall methodCall = findClassName(className).findMethod(methodName);
+        MethodInfo methodCall = findClassName(className).findMethod(methodName);
         methodReferenceMap.put(referenceId, methodCall);
 
         return referenceId;
     }
 
-    private ClassName findClassName(String className)
+    private ClassInfo findClassName(String className)
     {
-        ClassName clazz = classMap.get(className);
+        ClassInfo clazz = classMap.get(className);
         if (clazz == null)
         {
-            clazz = new ClassName(className);
+            clazz = new ClassInfo(className);
             classMap.put(className, clazz);
         }
         return clazz;
@@ -59,7 +66,7 @@ public class CacheGrindIntruderCollector implements IntruderCollector
     @Override
     public synchronized final void addCall(long time, long pid, boolean enter, int referenceId)
     {
-        MethodCall methodCall = methodReferenceMap.get(referenceId);
+        MethodInfo methodCall = methodReferenceMap.get(referenceId);
         if (methodCall == null)
         {
             System.err.println("Could not resolve : " + referenceId);
@@ -68,9 +75,9 @@ public class CacheGrindIntruderCollector implements IntruderCollector
         addCall(time, pid, enter, referenceId, methodCall);
     }
 
-    private final void addCall(long time, long pid, boolean enter, int referenceId, MethodCall methodCall)
+    private final void addCall(long time, long pid, boolean enter, int referenceId, MethodInfo methodInfo)
     {
-        if (enter && methodCall == null)
+        if (enter && methodInfo == null)
         {
             throw new IllegalArgumentException("Invalid !");
         }
@@ -80,55 +87,52 @@ public class CacheGrindIntruderCollector implements IntruderCollector
         {
             if (!methodStack.isEmpty())
             {
-                MethodCall parent = methodStack.peek().getMethodCall();
-                parent.addSubCall(methodCall);
+                MethodInfo parent = methodStack.peek().getMethodCall();
+                parent.addSubCall(methodInfo);
             }
-            methodStack.push(new MethodStackItem(methodCall, time));
+            methodStack.push(new MethodStackItem(methodInfo, time));
         }
         else
         {
             if (methodStack.isEmpty())
             {
-                System.err.println("Empty stack !!!");
-                throw new IllegalArgumentException("Empty stack !!");
+                System.err.println("Empty stack for methodCall=" + methodInfo);
+                return;
             }
 
-            if (methodCall == null)
+            while (!methodStack.isEmpty())
             {
-                // methodCall = methodStack.peek().getMethodCall();
-            }
-
-            while (!methodStack.isEmpty() && methodStack.peek().getMethodCall() != methodCall)
-            {
-                System.err.println("Jumped stack ! parent = " + methodStack.peek().getMethodCall() + ", methodCall="
-                        + methodCall);
-                // for (MethodStackItem parent : methodStack)
-                // {
-                // System.err.println(" Trace * " + parent.getMethodCall());
-                // }
-                // throw new IllegalArgumentException("Corrupted stack !!");
-                // return;
-                methodStack.pop();
-            }
-            long startTime = methodStack.peek().getStartTime();
-            long timeSpent = time - startTime;
-            if (timeSpent < 0)
-            {
-                System.err.println("Spurious! addCall() timeSpent=" + timeSpent + " at methodCall=" + methodCall
-                        + "(startTime=" + startTime + ", time=" + time + ")");
-                for (MethodStackItem parent : methodStack)
+                MethodStackItem currentStackItem = methodStack.peek();
+                long startTime = currentStackItem.getStartTime();
+                long timeSpent = time - startTime;
+                if (timeSpent < 0)
                 {
-                    System.err.println(" Trace * " + parent.getMethodCall());
+                    System.err.println("Spurious ! addCall() timeSpent=" + timeSpent + " at methodInfo=" + methodInfo
+                            + " [" + referenceId + "]" + "(startTime=" + startTime + ", time=" + time + ")");
+                    timeSpent = 0;
                 }
-                timeSpent = 0;
-            }
-            methodCall.appendInclusiveTime(timeSpent);
-            methodStack.pop();
+                currentStackItem.getMethodCall().appendInclusiveTime(timeSpent);
 
-            if (!methodStack.isEmpty())
-            {
-                MethodCall caller = methodStack.peek().getMethodCall();
-                caller.appendCallerTime(methodCall, timeSpent);
+                methodStack.pop();
+
+                if (!methodStack.isEmpty())
+                {
+                    methodStack.peek().getMethodCall().appendCallerTime(currentStackItem.getMethodCall(), timeSpent);
+                }
+
+                if (currentStackItem.getMethodCall() == methodInfo)
+                {
+                    break;
+                }
+                else
+                {
+                    System.err.println("Jumped stack ! parent = " + currentStackItem.getMethodCall() + ", methodCall="
+                            + methodInfo);
+                    if (methodStack.isEmpty())
+                    {
+                        System.err.println("Could not rewind stack for methodCall=" + methodInfo);
+                    }
+                }
             }
         }
     }
@@ -163,14 +167,17 @@ public class CacheGrindIntruderCollector implements IntruderCollector
 
     private void dump(String fileName) throws IOException
     {
-        for (Map.Entry<Long, MethodStack> threadEntry : perThreadStack.entrySet())
+        if (dumpUncleanThreads)
         {
-            if (!threadEntry.getValue().isEmpty())
+            for (Map.Entry<Long, MethodStack> threadEntry : perThreadStack.entrySet())
             {
-                System.err.println("Unclean stack : at thread : " + threadEntry.getKey());
-                for (MethodStackItem call : threadEntry.getValue())
+                if (!threadEntry.getValue().isEmpty())
                 {
-                    System.err.println(" * " + call.getMethodCall());
+                    System.err.println("Unclean stack : at thread : " + threadEntry.getKey());
+                    for (MethodStackItem call : threadEntry.getValue())
+                    {
+                        System.err.println(" * " + call.getMethodCall());
+                    }
                 }
             }
         }
@@ -180,14 +187,11 @@ public class CacheGrindIntruderCollector implements IntruderCollector
         printStream.println("");
         printStream.println("events: ticks");
         printStream.println("");
-        // printStream.println("fl=" +
-        // motherCall.getClassName().getClassName());
-        // dump(printStream, motherCall);
 
-        for (ClassName className : classMap.values())
+        for (ClassInfo className : classMap.values())
         {
             printStream.println("fl=" + protectClassName(className.getClassName()));
-            for (MethodCall methodCall : className.getMethodCalls())
+            for (MethodInfo methodCall : className.getMethodCalls())
             {
                 dump(printStream, methodCall);
             }
@@ -196,28 +200,24 @@ public class CacheGrindIntruderCollector implements IntruderCollector
         printStream.close();
     }
 
-    private void dump(PrintStream printStream, MethodCall methodCall)
+    private void dump(PrintStream printStream, MethodInfo methodCall)
     {
         printStream.println("fn=" + protectMethodName(methodCall.getMethodName()));
         printStream.println("0 " + methodCall.getPrivateTime());
-        for (Map.Entry<MethodCall, CallInfo> entry : methodCall.getSubCalls())
+        for (Map.Entry<MethodInfo, CallInfo> entry : methodCall.getSubCalls())
         {
-            MethodCall subCall = entry.getKey();
+            MethodInfo subCall = entry.getKey();
             printStream.println("cfl=" + protectClassName(subCall.getClassName().getClassName()));
             printStream.println("cfn=" + protectMethodName(subCall.getMethodName()));
             printStream.println("calls=" + entry.getValue().getNumber() + " " + "0");
 
             long timeSpent = entry.getValue().getTimeSpent();
-            if (timeSpent <= 0)
+            if (timeSpent < 0)
             {
-                System.err.println("Spurious!dump() timeSpent=" + timeSpent + " in call : " + methodCall + "=>"
-                        + subCall);
-                // throw new IllegalArgumentException("Spurious timeSpent=" +
-                // timeSpent + " in call : " + methodCall + "=>" + subCall);
+                System.err.println("Spurious ! timeSpent=" + timeSpent + " in call : " + methodCall + "=>" + subCall);
                 timeSpent = 1;
             }
             printStream.println("0 " + timeSpent);
         }
     }
-
 }
