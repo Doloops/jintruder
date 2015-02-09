@@ -222,7 +222,7 @@ public class IntruderParser
         for (Map.Entry<MethodInfo, CallInfo> entry : methodCall.getSubCalls())
         {
             MethodInfo subCall = entry.getKey();
-            printStream.println("cfl=" + protectClassName(subCall.getClassName().getClassName()));
+            printStream.println("cfl=" + protectClassName(subCall.getClassInfo().getClassName()));
             printStream.println("cfn=" + protectMethodName(subCall.getMethodName()));
             printStream.println("calls=" + entry.getValue().getNumber() + " " + "0");
 

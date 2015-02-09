@@ -174,7 +174,7 @@ public class IntruderTracker
         }
     }
 
-    private long lastPeriodicDump = 0;
+    private long lastPeriodicDump = System.currentTimeMillis();
 
     private synchronized void mayPeriodicDump()
     {

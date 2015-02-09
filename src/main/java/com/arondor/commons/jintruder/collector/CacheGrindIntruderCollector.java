@@ -137,13 +137,16 @@ public class CacheGrindIntruderCollector implements IntruderCollector
         }
     }
 
-    private final String protectMethodName(String methodName)
+    private final String protectMethodName(MethodInfo methodInfo)
     {
-        return methodName.replace('<', '_').replace('>', '_');
+        String methodName = methodInfo.getMethodName();
+        String result = methodName.replace('<', '_').replace('>', '_');
+        return result;
     }
 
-    private final String protectClassName(String className)
+    private final String protectClassName(ClassInfo classInfo)
     {
+        String className = classInfo.getClassName();
         return className.replace('/', '.').replace('$', '_');
     }
 
@@ -190,7 +193,7 @@ public class CacheGrindIntruderCollector implements IntruderCollector
 
         for (ClassInfo className : classMap.values())
         {
-            printStream.println("fl=" + protectClassName(className.getClassName()));
+            printStream.println("fl=" + protectClassName(className));
             for (MethodInfo methodCall : className.getMethodCalls())
             {
                 dump(printStream, methodCall);
@@ -202,13 +205,13 @@ public class CacheGrindIntruderCollector implements IntruderCollector
 
     private void dump(PrintStream printStream, MethodInfo methodCall)
     {
-        printStream.println("fn=" + protectMethodName(methodCall.getMethodName()));
+        printStream.println("fn=" + protectMethodName(methodCall));
         printStream.println("0 " + methodCall.getPrivateTime());
         for (Map.Entry<MethodInfo, CallInfo> entry : methodCall.getSubCalls())
         {
             MethodInfo subCall = entry.getKey();
-            printStream.println("cfl=" + protectClassName(subCall.getClassName().getClassName()));
-            printStream.println("cfn=" + protectMethodName(subCall.getMethodName()));
+            printStream.println("cfl=" + protectClassName(subCall.getClassInfo()));
+            printStream.println("cfn=" + protectMethodName(subCall));
             printStream.println("calls=" + entry.getValue().getNumber() + " " + "0");
 
             long timeSpent = entry.getValue().getTimeSpent();

@@ -18,7 +18,7 @@ public class MethodInfo
         this.methodName = methodName;
     }
 
-    public ClassInfo getClassName()
+    public ClassInfo getClassInfo()
     {
         return parent;
     }
