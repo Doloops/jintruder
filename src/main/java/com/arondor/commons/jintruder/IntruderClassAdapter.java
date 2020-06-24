@@ -73,7 +73,7 @@ public class IntruderClassAdapter extends ClassVisitor
 
         public AddDecorationMethodVisitor(MethodVisitor mv, String methodName, String signature)
         {
-            super(Opcodes.ASM4, mv);
+            super(Opcodes.ASM8, mv);
             this.methodName = methodName;
 
             if (isLog())
@@ -82,11 +82,11 @@ public class IntruderClassAdapter extends ClassVisitor
             }
         }
 
-        @Override
-        public void visitMaxs(int maxStack, int maxLocals)
-        {
-            mv.visitMaxs(maxStack + 8, maxLocals + 2);
-        }
+        // @Override
+        // public void visitMaxs(int maxStack, int maxLocals)
+        // {
+        // mv.visitMaxs(maxStack + 8, maxLocals + 2);
+        // }
 
         @Override
         public void visitCode()
@@ -103,12 +103,12 @@ public class IntruderClassAdapter extends ClassVisitor
             mv.visitLdcInsn(className);
             mv.visitLdcInsn(this.methodName);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "declareMethod",
-                    "(Ljava/lang/String;Ljava/lang/String;)I");
+                    "(Ljava/lang/String;Ljava/lang/String;)I", false);
             mv.visitInsn(Opcodes.DUP);
             mv.visitFieldInsn(Opcodes.PUTSTATIC, className, intruderFieldName, "I");
 
             mv.visitLabel(label);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "startMethod", "(I)V");
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "startMethod", "(I)V", false);
         }
 
         @Override
@@ -117,7 +117,7 @@ public class IntruderClassAdapter extends ClassVisitor
             if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) || opcode == Opcodes.ATHROW)
             {
                 mv.visitFieldInsn(Opcodes.GETSTATIC, className, intruderFieldName, "I");
-                mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "finishMethod", "(I)V");
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "finishMethod", "(I)V", false);
             }
             mv.visitInsn(opcode);
         }

@@ -29,6 +29,7 @@ public class IntruderTracker
         delayedRegistry.setThreadFactory(new ThreadFactory()
         {
 
+            @Override
             public Thread newThread(Runnable arg0)
             {
                 Thread thread = new Thread(arg0);
@@ -96,6 +97,7 @@ public class IntruderTracker
 
     protected final TraceEventBucket.Visitor traceEventVisitor = new TraceEventBucket.Visitor()
     {
+        @Override
         public void visit(int methodReference, long pid, long time, boolean enter)
         {
             if (DUMP_EVENTS)
@@ -118,6 +120,7 @@ public class IntruderTracker
             this.visitor = visitor;
         }
 
+        @Override
         public void run()
         {
             long start = System.currentTimeMillis();

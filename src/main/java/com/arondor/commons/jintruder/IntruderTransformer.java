@@ -1,5 +1,6 @@
 package com.arondor.commons.jintruder;
 
+import java.io.FileOutputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
@@ -129,12 +130,11 @@ public class IntruderTransformer implements ClassFileTransformer
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined,
             ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException
     {
-        byte[] retVal = null;
         if (isClassTraced(className))
         {
             try
             {
-                ClassWriter cw = new ClassWriter(0);
+                ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
                 ClassVisitor ca = new IntruderClassAdapter(cw);
                 ClassReader cr = new ClassReader(classfileBuffer);
 
@@ -147,16 +147,22 @@ public class IntruderTransformer implements ClassFileTransformer
                     return null;
                 }
                 cr.accept(ca, 0);
-                retVal = cw.toByteArray();
+                byte[] retVal = cw.toByteArray();
+
+                FileOutputStream fos = new FileOutputStream("/tmp/" + className.replace('/', '_') + ".class");
+                fos.write(retVal);
+                fos.close();
+
+                return retVal;
             }
             catch (RuntimeException e)
             {
-                log("Catched : " + e);
+                log("Caught exception : " + e);
                 e.printStackTrace();
             }
             catch (Throwable e)
             {
-                log("Catched : " + e);
+                log("Caught exception : " + e);
                 e.printStackTrace();
             }
             finally
@@ -167,7 +173,7 @@ public class IntruderTransformer implements ClassFileTransformer
                 }
             }
         }
-        return retVal;
+        return classfileBuffer;
     }
 
 }
