@@ -9,7 +9,7 @@
 	<properties>
 		<maven.compiler.source>1.6</maven.compiler.source>
 		<maven.compiler.target>1.6</maven.compiler.target>
-		<junit.version>4.12</junit.version>		
+		<junit.version>4.13.1</junit.version>		
 		<asm.version>8.0.1</asm.version>
 	</properties>
 
