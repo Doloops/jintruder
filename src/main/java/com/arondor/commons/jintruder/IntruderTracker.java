@@ -40,6 +40,10 @@ public class IntruderTracker
         System.err.println(message);
     }
 
+    private static void debug(String string)
+    {
+    }
+
     private final Thread backgroundThread = new Thread()
     {
         @Override
@@ -102,8 +106,8 @@ public class IntruderTracker
         if (sInterval != null)
         {
             intruderPeriodicDumpInterval = Integer.parseInt(sInterval) * 1000;
+            log("Periodic Dump Interval set to " + intruderPeriodicDumpInterval + "ms");
         }
-        log("Delayed interval, setting at=" + intruderPeriodicDumpInterval);
 
         tickerThread.setName("IntruderTicker");
         tickerThread.setDaemon(true);
@@ -117,7 +121,7 @@ public class IntruderTracker
             @Override
             public void run()
             {
-                log("[INTRUDER] : Shutting down backgroundThread ...");
+                log("Shutting down backgroundThread ...");
                 shutdown = true;
                 boolean processActiveQueues = true;
                 try
@@ -127,12 +131,12 @@ public class IntruderTracker
                 }
                 catch (InterruptedException e)
                 {
-                    log("[INTRUDER] : Could not wait backgroundThread: " + e.getMessage());
+                    log("Could not wait backgroundThread: " + e.getMessage());
                     processActiveQueues = false;
                 }
                 if (processActiveQueues)
                 {
-                    log("[INTRUDER] : Processing " + activeBuckets.size() + " per-thread active queues...");
+                    log("Processing " + activeBuckets.size() + " per-thread active queues...");
                     for (TraceEventBucket activeEvent : activeBuckets.values())
                     {
                         intruderCollector.processBucket(activeEvent);
@@ -140,7 +144,7 @@ public class IntruderTracker
                 }
                 else
                 {
-                    log("[INTRUDER] : will not process active queues due to previous errors.");
+                    log("Will not process active queues due to previous errors.");
                 }
 
                 intruderSink.dumpAll(intruderCollector.getClassMap());
@@ -156,13 +160,7 @@ public class IntruderTracker
 
     private void processBucket(TraceEventBucket bucket)
     {
-        long start = System.currentTimeMillis();
         intruderCollector.processBucket(bucket);
-        long end = System.currentTimeMillis();
-        if (VERBOSE)
-        {
-            log("[INTRUDER] : Processed " + bucket.size() + " events in " + (end - start) + "ms");
-        }
         synchronized (IntruderTracker.this)
         {
             if (recycledBuckets.size() < MAX_RECYCLED_BUCKETS)
@@ -171,7 +169,7 @@ public class IntruderTracker
             }
             else
             {
-                log("[INTRUDER] Dropping bucket because " + recycledBuckets.size() + " recycled, "
+                debug("Dropping bucket because " + recycledBuckets.size() + " recycled, "
                         + queuedBuckets.size() + " buckets in queue.");
             }
         }
@@ -257,7 +255,7 @@ public class IntruderTracker
         long now = System.currentTimeMillis();
         if (intruderPeriodicDumpInterval != 0 && (now - lastPeriodicDump > intruderPeriodicDumpInterval))
         {
-            log("Delayed interval, now=" + now + ", last=" + lastPeriodicDump);
+            log("Periodic dump : now=" + now + ", last=" + lastPeriodicDump);
             lastPeriodicDump = now;
             intruderSink.dumpAll(intruderCollector.getClassMap());
         }
