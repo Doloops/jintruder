@@ -16,6 +16,8 @@ public class CacheGrindIntruderCollector implements IntruderCollector
 {
     private boolean dumpUncleanThreads = false;
 
+    private static final boolean VERBOSE = true;
+
     private Map<Long, MethodStack> perThreadStack = new HashMap<Long, MethodStack>();
 
     private Map<String, ClassInfo> classMap = new HashMap<String, ClassInfo>();
@@ -27,7 +29,12 @@ public class CacheGrindIntruderCollector implements IntruderCollector
 
     }
 
-    private final MethodStack getPerThreadStack(long pid)
+    private static final void log(String msg)
+    {
+        System.err.println(msg);
+    }
+
+    private synchronized final MethodStack getPerThreadStack(long pid)
     {
         MethodStack methodStack = perThreadStack.get(pid);
         if (methodStack == null)
@@ -43,13 +50,20 @@ public class CacheGrindIntruderCollector implements IntruderCollector
     @Override
     public final int registerMethodReference(String className, String methodName)
     {
-        nextMethodReference++;
-        int referenceId = nextMethodReference;
-
         MethodInfo methodCall = findClassName(className).findMethod(methodName);
-        methodReferenceMap.put(referenceId, methodCall);
+        if (methodCall == null)
+        {
+            nextMethodReference++;
+            int referenceId = nextMethodReference;
+            methodCall = findClassName(className).addMethod(referenceId, methodName);
+            methodReferenceMap.put(referenceId, methodCall);
+        }
+        if (VERBOSE)
+        {
+            log("REGISTER " + methodCall.getReferenceId() + " " + className + "." + methodName);
+        }
 
-        return referenceId;
+        return methodCall.getReferenceId();
     }
 
     private ClassInfo findClassName(String className)
@@ -64,7 +78,7 @@ public class CacheGrindIntruderCollector implements IntruderCollector
     }
 
     @Override
-    public synchronized final void addCall(long time, long pid, boolean enter, int referenceId)
+    public final void addCall(long time, long pid, boolean enter, int referenceId)
     {
         MethodInfo methodCall = methodReferenceMap.get(referenceId);
         if (methodCall == null)
@@ -77,60 +91,66 @@ public class CacheGrindIntruderCollector implements IntruderCollector
 
     private final void addCall(long time, long pid, boolean enter, int referenceId, MethodInfo methodInfo)
     {
+        log("[" + pid + "] t=" + time + ", " + (enter ? ">" : "<") + referenceId);
         if (enter && methodInfo == null)
         {
             throw new IllegalArgumentException("Invalid !");
         }
         MethodStack methodStack = getPerThreadStack(pid);
 
-        if (enter)
+        synchronized (methodStack)
         {
-            if (!methodStack.isEmpty())
+            if (enter)
             {
-                MethodInfo parent = methodStack.peek().getMethodCall();
-                parent.addSubCall(methodInfo);
-            }
-            methodStack.push(new MethodStackItem(methodInfo, time));
-        }
-        else
-        {
-            if (methodStack.isEmpty())
-            {
-                System.err.println("Empty stack for methodCall=" + methodInfo);
-                return;
-            }
-
-            while (!methodStack.isEmpty())
-            {
-                MethodStackItem currentStackItem = methodStack.peek();
-                long startTime = currentStackItem.getStartTime();
-                long timeSpent = time - startTime;
-                if (timeSpent < 0)
-                {
-                    System.err.println("Spurious ! addCall() timeSpent=" + timeSpent + " at methodInfo=" + methodInfo
-                            + " [" + referenceId + "]" + "(startTime=" + startTime + ", time=" + time + ")");
-                    timeSpent = 0;
-                }
-                currentStackItem.getMethodCall().appendInclusiveTime(timeSpent);
-
-                methodStack.pop();
-
                 if (!methodStack.isEmpty())
                 {
-                    methodStack.peek().getMethodCall().appendCallerTime(currentStackItem.getMethodCall(), timeSpent);
+                    MethodInfo parent = methodStack.peek().getMethodCall();
+                    parent.addSubCall(methodInfo);
+                }
+                methodStack.push(new MethodStackItem(methodInfo, time));
+            }
+            else
+            {
+                if (methodStack.isEmpty())
+                {
+                    System.err.println("Empty stack for methodCall=" + methodInfo);
+                    return;
                 }
 
-                if (currentStackItem.getMethodCall() == methodInfo)
+                while (!methodStack.isEmpty())
                 {
-                    break;
-                }
-                else
-                {
-                    System.err.println("Jumped stack ! parent = " + currentStackItem.getMethodCall() + ", methodCall="
-                            + methodInfo);
-                    if (methodStack.isEmpty())
+                    MethodStackItem currentStackItem = methodStack.peek();
+                    long startTime = currentStackItem.getStartTime();
+                    long timeSpent = time - startTime;
+                    if (timeSpent < 0)
                     {
-                        System.err.println("Could not rewind stack for methodCall=" + methodInfo);
+                        System.err.println(
+                                "Spurious ! addCall() timeSpent=" + timeSpent + " at methodInfo=" + methodInfo + " ["
+                                        + referenceId + "]" + "(startTime=" + startTime + ", time=" + time + ")");
+                        timeSpent = 0;
+                    }
+                    currentStackItem.getMethodCall().appendInclusiveTime(timeSpent);
+
+                    methodStack.pop();
+
+                    if (!methodStack.isEmpty())
+                    {
+                        methodStack.peek().getMethodCall().appendCallerTime(currentStackItem.getMethodCall(),
+                                timeSpent);
+                    }
+
+                    if (currentStackItem.getMethodCall() == methodInfo)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        System.err.println("Jumped stack ! parent = " + currentStackItem.getMethodCall()
+                                + ", methodCall=" + methodInfo);
+                        if (methodStack.isEmpty())
+                        {
+                            System.err.println("Could not rewind stack for methodCall=" + methodInfo);
+                        }
                     }
                 }
             }
@@ -193,18 +213,23 @@ public class CacheGrindIntruderCollector implements IntruderCollector
 
         for (ClassInfo className : classMap.values())
         {
-            printStream.println("fl=" + protectClassName(className));
-            for (MethodInfo methodCall : className.getMethodCalls())
+            if (className.getTotalTime() > 0)
             {
-                dump(printStream, methodCall);
+                printStream.println("fl=" + protectClassName(className));
+                for (MethodInfo methodCall : className.getMethodCalls())
+                {
+                    dump(printStream, methodCall);
+                }
+                printStream.println("");
             }
-            printStream.println("");
         }
         printStream.close();
     }
 
     private void dump(PrintStream printStream, MethodInfo methodCall)
     {
+        if (methodCall.getPrivateTime() == 0)
+            return;
         printStream.println("fn=" + protectMethodName(methodCall));
         printStream.println("0 " + methodCall.getPrivateTime());
         for (Map.Entry<MethodInfo, CallInfo> entry : methodCall.getSubCalls())

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -51,11 +50,6 @@ public class IntruderClassAdapter extends ClassVisitor
     {
         MethodVisitor mv;
 
-        intruderFieldName = "INTRUDER_METHODREF_" + methodCount;
-        methodCount++;
-
-        cv.visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, intruderFieldName, "I", null, 0);
-
         mv = cv.visitMethod(access, name, desc, signature, exceptions);
         if (mv != null)
         {
@@ -82,32 +76,13 @@ public class IntruderClassAdapter extends ClassVisitor
             }
         }
 
-        // @Override
-        // public void visitMaxs(int maxStack, int maxLocals)
-        // {
-        // mv.visitMaxs(maxStack + 8, maxLocals + 2);
-        // }
-
         @Override
         public void visitCode()
         {
+            int methodId = IntruderTracker.declareMethod(className, methodName);
+
             mv.visitCode();
-            mv.visitFieldInsn(Opcodes.GETSTATIC, className, intruderFieldName, "I");
-
-            mv.visitInsn(Opcodes.DUP);
-
-            Label label = new Label();
-            mv.visitJumpInsn(Opcodes.IFNE, label);
-
-            mv.visitInsn(Opcodes.POP);
-            mv.visitLdcInsn(className);
-            mv.visitLdcInsn(this.methodName);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "declareMethod",
-                    "(Ljava/lang/String;Ljava/lang/String;)I", false);
-            mv.visitInsn(Opcodes.DUP);
-            mv.visitFieldInsn(Opcodes.PUTSTATIC, className, intruderFieldName, "I");
-
-            mv.visitLabel(label);
+            mv.visitLdcInsn(methodId);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "startMethod", "(I)V", false);
         }
 
@@ -116,7 +91,9 @@ public class IntruderClassAdapter extends ClassVisitor
         {
             if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) || opcode == Opcodes.ATHROW)
             {
-                mv.visitFieldInsn(Opcodes.GETSTATIC, className, intruderFieldName, "I");
+                int methodId = IntruderTracker.declareMethod(className, methodName);
+
+                mv.visitLdcInsn(methodId);
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "finishMethod", "(I)V", false);
             }
             mv.visitInsn(opcode);

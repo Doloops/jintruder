@@ -23,16 +23,23 @@ public class ClassInfo
     public MethodInfo findMethod(String methodName)
     {
         MethodInfo methodCall = methodCalls.get(methodName);
-        if (methodCall == null)
-        {
-            methodCall = new MethodInfo(this, methodName);
-            methodCalls.put(methodName, methodCall);
-        }
+        return methodCall;
+    }
+
+    public MethodInfo addMethod(int referenceId, String methodName)
+    {
+        MethodInfo methodCall = new MethodInfo(referenceId, this, methodName);
+        methodCalls.put(methodName, methodCall);
         return methodCall;
     }
 
     public Collection<MethodInfo> getMethodCalls()
     {
         return methodCalls.values();
+    }
+
+    public long getTotalTime()
+    {
+        return methodCalls.values().stream().map(MethodInfo::getPrivateTime).reduce(0L, Long::sum);
     }
 }

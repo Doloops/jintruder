@@ -6,14 +6,17 @@ import java.util.Set;
 
 public class MethodInfo
 {
+    private final int id;
+
     private final String methodName;
 
     private final ClassInfo parent;
 
     private long inclusiveTime = 0;
 
-    public MethodInfo(ClassInfo className, String methodName)
+    public MethodInfo(int id, ClassInfo className, String methodName)
     {
+        this.id = id;
         this.parent = className;
         this.methodName = methodName;
     }
@@ -26,6 +29,11 @@ public class MethodInfo
     public String getMethodName()
     {
         return methodName;
+    }
+
+    public int getReferenceId()
+    {
+        return id;
     }
 
     private Map<MethodInfo, CallInfo> subCalls = new HashMap<MethodInfo, CallInfo>();
@@ -41,6 +49,7 @@ public class MethodInfo
         callInfo.addCalled();
     }
 
+    @Override
     public String toString()
     {
         return parent.getClassName() + ":" + getMethodName();
