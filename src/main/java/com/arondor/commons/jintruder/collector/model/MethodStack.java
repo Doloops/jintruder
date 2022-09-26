@@ -1,6 +1,6 @@
 package com.arondor.commons.jintruder.collector.model;
 
-public class MethodStack // extends Stack<MethodStackItem>
+public class MethodStack
 {
     private static final int MAX_STACK_SIZE = 8192;
 

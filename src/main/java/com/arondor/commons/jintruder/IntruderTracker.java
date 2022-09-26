@@ -3,9 +3,6 @@ package com.arondor.commons.jintruder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 
 import com.arondor.commons.jintruder.collector.IntruderCollector;
 import com.arondor.commons.jintruder.collector.MemIntruderCollector;
@@ -16,17 +13,60 @@ public class IntruderTracker
 {
     private static final boolean VERBOSE = false;
 
-    private static final boolean DUMP_EVENTS = false;
+    private static final int MAX_RECYCLED_BUCKETS = 8192;
 
-    private static final boolean ASYNC_PROCESSING = true;
-
-    private final long startTime = System.nanoTime();
+    private static final int MAX_QUEUED_BUCKETS = 1_000_000;
 
     private long intruderPeriodicDumpInterval = 0;
 
     private final IntruderCollector intruderCollector = new MemIntruderCollector();
 
     private final IntruderSink intruderSink = new CacheGrindSink();
+
+    private final List<TraceEventBucket> queuedBuckets = new LinkedList<TraceEventBucket>();
+
+    private final ThreadLocal<TraceEventBucket> threadLocalEvent = new ThreadLocal<TraceEventBucket>();
+
+    private final Map<Thread, TraceEventBucket> activeBuckets = new java.util.concurrent.ConcurrentHashMap<Thread, TraceEventBucket>();
+
+    private final List<TraceEventBucket> recycledBuckets = new LinkedList<TraceEventBucket>();
+
+    private boolean shutdown = false;
+
+    private final Thread backgroundThread = new Thread()
+    {
+        @Override
+        public void run()
+        {
+            while (!shutdown)
+            {
+                synchronized (backgroundThread)
+                {
+                    try
+                    {
+                        backgroundThread.wait(100);
+                    }
+                    catch (InterruptedException e)
+                    {
+                    }
+                }
+
+                while (true)
+                {
+                    TraceEventBucket head;
+                    synchronized (queuedBuckets)
+                    {
+                        if (queuedBuckets.isEmpty())
+                            break;
+                        head = queuedBuckets.remove(0);
+                    }
+
+                    processBucket(head);
+                }
+                mayPeriodicDump();
+            }
+        }
+    };
 
     public IntruderTracker()
     {
@@ -37,50 +77,33 @@ public class IntruderTracker
         }
         log("Delayed interval, setting at=" + intruderPeriodicDumpInterval);
 
-        delayedRegistryExecutor = new ScheduledThreadPoolExecutor(1);
-        delayedRegistryExecutor.setThreadFactory(new ThreadFactory()
-        {
-
-            @Override
-            public Thread newThread(Runnable arg0)
-            {
-                Thread thread = new Thread(arg0);
-                thread.setName("IntruderBackgroundThread");
-                thread.setDaemon(true);
-                thread.setPriority(Thread.MIN_PRIORITY);
-                return thread;
-            }
-        });
+        backgroundThread.setName("IntruderBackgroundThread");
+        backgroundThread.setDaemon(true);
 
         Runtime.getRuntime().addShutdownHook(new Thread()
         {
             @Override
             public void run()
             {
-                log("[INTRUDER] : Shutting down delayedRegistry ...");
-                delayedRegistryExecutor.shutdown();
-
+                log("[INTRUDER] : Shutting down backgroundThread ...");
+                shutdown = true;
                 boolean processActiveQueues = true;
                 try
                 {
                     Thread.sleep(10);
-                    if (!delayedRegistryExecutor.awaitTermination(180, TimeUnit.SECONDS))
-                    {
-                        log("[INTRUDER] : Could not wait delayedRegistry : timeout !");
-                        processActiveQueues = false;
-                    }
+                    backgroundThread.join(10_000);
                 }
                 catch (InterruptedException e)
                 {
-                    log("[INTRUDER] : Could not wait delayedRegistry : " + e.getMessage());
+                    log("[INTRUDER] : Could not wait backgroundThread: " + e.getMessage());
                     processActiveQueues = false;
                 }
                 if (processActiveQueues)
                 {
-                    log("[INTRUDER] : Processing " + activeQueue.size() + " per-thread active queues...");
-                    for (TraceEventBucket activeEvent : activeQueue.values())
+                    log("[INTRUDER] : Processing " + activeBuckets.size() + " per-thread active queues...");
+                    for (TraceEventBucket activeEvent : activeBuckets.values())
                     {
-                        activeEvent.visit(traceEventVisitor);
+                        intruderCollector.processBucket(activeEvent);
                     }
                 }
                 else
@@ -91,6 +114,7 @@ public class IntruderTracker
                 intruderSink.dumpAll(intruderCollector.getClassMap());
             }
         });
+        backgroundThread.start();
     }
 
     private static void log(String message)
@@ -103,24 +127,10 @@ public class IntruderTracker
         return intruderCollector.registerMethodReference(className, methodName);
     }
 
-    protected final TraceEventBucket.Visitor traceEventVisitor = new TraceEventBucket.Visitor()
-    {
-        @Override
-        public void visit(int methodReference, long threadId, long time, boolean enter)
-        {
-            if (DUMP_EVENTS)
-            {
-                log((time - startTime) + " [" + threadId + "] " + (enter ? "enter" : "exit") + " "
-                        + intruderCollector.getMethodName(methodReference));
-            }
-            intruderCollector.addCall(time, threadId, enter, methodReference);
-        }
-    };
-
-    private void visitBucket(TraceEventBucket bucket, TraceEventBucket.Visitor visitor)
+    private void processBucket(TraceEventBucket bucket)
     {
         long start = System.currentTimeMillis();
-        bucket.visit(visitor);
+        intruderCollector.processBucket(bucket);
         long end = System.currentTimeMillis();
         if (VERBOSE)
         {
@@ -135,74 +145,69 @@ public class IntruderTracker
             else
             {
                 log("[INTRUDER] Dropping bucket because " + recycledBuckets.size() + " recycled, "
-                        + delayedRegistryExecutor.getQueue().size() + " buckets in queue.");
+                        + queuedBuckets.size() + " buckets in queue.");
             }
         }
     }
-
-    private final ScheduledThreadPoolExecutor delayedRegistryExecutor;
-
-    private final ThreadLocal<TraceEventBucket> threadLocalEvent = new ThreadLocal<TraceEventBucket>();
-
-    private final Map<Thread, TraceEventBucket> activeQueue = new java.util.concurrent.ConcurrentHashMap<Thread, TraceEventBucket>();
-
-    private final List<TraceEventBucket> recycledBuckets = new LinkedList<TraceEventBucket>();
-
-    private static final int MAX_RECYCLED_BUCKETS = 256;
 
     private final void startFinishMethod(int methodId, boolean startOrFinish)
     {
         Thread currentThread = Thread.currentThread();
         long threadId = currentThread.getId();
-        if (ASYNC_PROCESSING)
+
+        if (queuedBuckets.size() > MAX_QUEUED_BUCKETS)
+            return;
+        TraceEventBucket bucket = threadLocalEvent.get();
+        if (bucket == null)
         {
-            TraceEventBucket bucket = threadLocalEvent.get();
+            synchronized (this)
+            {
+                if (!recycledBuckets.isEmpty())
+                {
+                    bucket = recycledBuckets.remove(0);
+                    bucket.reuse(threadId);
+                }
+            }
             if (bucket == null)
             {
-                synchronized (this)
-                {
-                    if (!recycledBuckets.isEmpty())
-                    {
-                        bucket = recycledBuckets.remove(0);
-                        bucket.reuse(threadId);
-                    }
-                }
-                if (bucket == null)
-                {
-                    bucket = new TraceEventBucket(threadId);
-                }
-                activeQueue.put(currentThread, bucket);
-                threadLocalEvent.set(bucket);
+                bucket = new TraceEventBucket(threadId);
             }
-            else
-            {
-                if (bucket.getThreadId() != threadId)
-                {
-                    throw new IllegalArgumentException("Invalid bucket thread ! current=" + threadId
-                            + " but bucket has theadId=" + bucket.getThreadId());
-                }
-            }
-            bucket.addEvent(methodId, System.nanoTime(), startOrFinish);
-            if (bucket.isFull())
-            {
-                threadLocalEvent.set(null);
-                activeQueue.remove(currentThread);
-
-                final TraceEventBucket finalBucket = bucket;
-                delayedRegistryExecutor.submit(() -> visitBucket(finalBucket, traceEventVisitor));
-
-                // log("[INTRUDER] delayed scheduler " +
-                // delayedRegistryExecutor.getQueue().size() + ", recycled
-                // buckets "
-                // + recycledBuckets.size());
-
-                mayPeriodicDump();
-            }
+            activeBuckets.put(currentThread, bucket);
+            threadLocalEvent.set(bucket);
         }
         else
         {
-            traceEventVisitor.visit(methodId, threadId, System.nanoTime(), startOrFinish);
-            mayPeriodicDump();
+            if (bucket.getThreadId() != threadId)
+            {
+                throw new IllegalArgumentException("Invalid bucket thread ! current=" + threadId
+                        + " but bucket has theadId=" + bucket.getThreadId());
+            }
+        }
+        bucket.addEvent(methodId, System.nanoTime(), startOrFinish);
+        if (bucket.isFull())
+        {
+            threadLocalEvent.set(null);
+            activeBuckets.remove(currentThread);
+
+            boolean mayNotify = false;
+            synchronized (queuedBuckets)
+            {
+                queuedBuckets.add(bucket);
+                if (queuedBuckets.size() == MAX_QUEUED_BUCKETS)
+                {
+                    log("Queued buckets reached maximum " + MAX_QUEUED_BUCKETS + ", recyled=" + recycledBuckets.size()
+                            + ", active=" + activeBuckets.size());
+                    mayNotify = true;
+                }
+            }
+
+            if (mayNotify)
+            {
+                synchronized (backgroundThread)
+                {
+                    backgroundThread.notify();
+                }
+            }
         }
     }
 
@@ -213,18 +218,9 @@ public class IntruderTracker
         long now = System.currentTimeMillis();
         if (intruderPeriodicDumpInterval != 0 && (now - lastPeriodicDump > intruderPeriodicDumpInterval))
         {
-            log("Delayed interval,  now=" + now + ", last=" + lastPeriodicDump);
+            log("Delayed interval, now=" + now + ", last=" + lastPeriodicDump);
             lastPeriodicDump = now;
-            delayedRegistryExecutor.submit(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    log("Delayed interval, dump now !");
-                    intruderSink.dumpAll(intruderCollector.getClassMap());
-                }
-            });
-
+            intruderSink.dumpAll(intruderCollector.getClassMap());
         }
     }
 

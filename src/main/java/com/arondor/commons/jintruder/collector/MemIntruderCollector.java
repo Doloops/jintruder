@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.arondor.commons.jintruder.TraceEventBucket;
 import com.arondor.commons.jintruder.collector.model.ClassInfo;
 import com.arondor.commons.jintruder.collector.model.ClassMap;
 import com.arondor.commons.jintruder.collector.model.MethodInfo;
@@ -91,6 +92,18 @@ public class MemIntruderCollector implements IntruderCollector
             return;
         }
         addCall(time, threadId, enter, referenceId, methodCall);
+    }
+
+    @Override
+    public void processBucket(TraceEventBucket bucket)
+    {
+        for (int idx = 0; idx < bucket.size(); idx++)
+        {
+            long time = bucket.getTime(idx);
+            int methodId = bucket.getMethodId(idx);
+            boolean enter = bucket.getEnter(idx);
+            addCall(time, bucket.getThreadId(), enter, methodId);
+        }
     }
 
     private final void addCall(long time, long threadId, boolean enter, int referenceId, MethodInfo methodInfo)

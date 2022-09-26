@@ -33,19 +33,6 @@ public class TraceEventBucket
         return cursor == BUCKET_SIZE;
     }
 
-    public static interface Visitor
-    {
-        public void visit(int methodReference, long threadId, long time, boolean enter);
-    }
-
-    public final void visit(Visitor visitor)
-    {
-        for (int index = 0; index < cursor; index++)
-        {
-            visitor.visit(Math.abs(methodArray[index]), threadId, timeArray[index], methodArray[index] >= 0);
-        }
-    }
-
     public final int size()
     {
         return cursor;
@@ -56,9 +43,25 @@ public class TraceEventBucket
         return threadId;
     }
 
-    public void reuse(long threadId)
+    public final void reuse(long threadId)
     {
         this.threadId = threadId;
         this.cursor = 0;
     }
+
+    public final long getTime(int idx)
+    {
+        return timeArray[idx];
+    }
+
+    public final int getMethodId(int idx)
+    {
+        return Math.abs(methodArray[idx]);
+    }
+
+    public final boolean getEnter(int idx)
+    {
+        return methodArray[idx] > 0;
+    }
+
 }

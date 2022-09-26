@@ -1,5 +1,6 @@
 package com.arondor.commons.jintruder.collector;
 
+import com.arondor.commons.jintruder.TraceEventBucket;
 import com.arondor.commons.jintruder.collector.model.ClassMap;
 
 public interface IntruderCollector
@@ -9,6 +10,8 @@ public interface IntruderCollector
     String getMethodName(int methodReference);
 
     void addCall(long time, long threadId, boolean enter, int methodReference);
+
+    void processBucket(TraceEventBucket bucket);
 
     ClassMap getClassMap();
 }
