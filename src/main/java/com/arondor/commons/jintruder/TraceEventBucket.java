@@ -19,10 +19,6 @@ public class TraceEventBucket
 
     public final void addEvent(int methodReference, long time, boolean enter)
     {
-        if (isFull())
-        {
-            throw new IllegalStateException("TraceEventBucket already full for thread " + threadId);
-        }
         this.timeArray[cursor] = time;
         this.methodArray[cursor] = enter ? methodReference : -methodReference;
         this.cursor++;
