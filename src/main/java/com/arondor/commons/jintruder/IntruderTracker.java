@@ -177,14 +177,14 @@ public class IntruderTracker
         }
     }
 
-    private final void startFinishMethod(int methodId, boolean startOrFinish)
+    private final void doAddCallMethod(int methodId)
     {
         if (queuedBuckets.size() > MAX_QUEUED_BUCKETS)
             return;
 
         TraceEventBucket bucket = findCurrentBucket();
         long time = ticker;
-        bucket.addEvent(methodId, time, startOrFinish);
+        bucket.addEvent(methodId, time);
         if (bucket.isFull())
         {
             threadLocalEvent.set(null);
@@ -272,13 +272,9 @@ public class IntruderTracker
         return SINGLETON.doDeclareMethod(className, methodName);
     }
 
-    public static final void startMethod(int methodId)
+    public static final void startFinishMethod(int methodId)
     {
-        SINGLETON.startFinishMethod(methodId, true);
+        SINGLETON.doAddCallMethod(methodId);
     }
 
-    public static final void finishMethod(int methodId)
-    {
-        SINGLETON.startFinishMethod(methodId, false);
-    }
 }

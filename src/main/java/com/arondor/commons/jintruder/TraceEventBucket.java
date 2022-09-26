@@ -17,11 +17,12 @@ public class TraceEventBucket
         this.threadId = threadId;
     }
 
-    public final void addEvent(int methodReference, long time, boolean enter)
+    public final void addEvent(int methodReference, long time)
     {
-        this.timeArray[cursor] = time;
-        this.methodArray[cursor] = enter ? methodReference : -methodReference;
-        this.cursor++;
+        int cursor = this.cursor;
+        timeArray[cursor] = time;
+        methodArray[cursor] = methodReference;
+        this.cursor = cursor + 1;
     }
 
     public final boolean isFull()

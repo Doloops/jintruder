@@ -79,7 +79,7 @@ public class IntruderClassAdapter extends ClassVisitor
         public void visitCode()
         {
             mv.visitLdcInsn(methodId);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "startMethod", "(I)V", false);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "startFinishMethod", "(I)V", false);
 
             mv.visitLabel(start);
             mv.visitCode();
@@ -91,8 +91,8 @@ public class IntruderClassAdapter extends ClassVisitor
             mv.visitTryCatchBlock(start, end, end, null);
             mv.visitLabel(end);
 
-            mv.visitLdcInsn(methodId);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "finishMethod", "(I)V", false);
+            mv.visitLdcInsn(-methodId);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "startFinishMethod", "(I)V", false);
             mv.visitInsn(Opcodes.ATHROW);
             // visit the corresponding instructions
             super.visitMaxs(maxStack + 8, maxLocals + 2);
@@ -103,8 +103,8 @@ public class IntruderClassAdapter extends ClassVisitor
         {
             if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN)
             {
-                mv.visitLdcInsn(methodId);
-                mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "finishMethod", "(I)V", false);
+                mv.visitLdcInsn(-methodId);
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "startFinishMethod", "(I)V", false);
                 mv.visitInsn(opcode);
             }
             else if (opcode == Opcodes.ATHROW)
