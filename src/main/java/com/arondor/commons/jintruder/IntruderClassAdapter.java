@@ -60,8 +60,6 @@ public class IntruderClassAdapter extends ClassVisitor
 
     public class AddDecorationMethodVisitor extends MethodVisitor
     {
-        private final String methodName;
-
         private final Label start = new Label(), end = new Label(), handler = new Label();
 
         private final int methodId;
@@ -69,7 +67,6 @@ public class IntruderClassAdapter extends ClassVisitor
         public AddDecorationMethodVisitor(MethodVisitor mv, String methodName, String signature)
         {
             super(Opcodes.ASM8, mv);
-            this.methodName = methodName;
             this.methodId = IntruderTracker.declareMethod(className, methodName);
 
             if (isLog())
@@ -88,7 +85,8 @@ public class IntruderClassAdapter extends ClassVisitor
             mv.visitCode();
         }
 
-        public void __visitEnd()
+        @Override
+        public void visitMaxs(int maxStack, int maxLocals)
         {
             mv.visitTryCatchBlock(start, end, end, null);
             mv.visitLabel(end);
@@ -96,12 +94,6 @@ public class IntruderClassAdapter extends ClassVisitor
             mv.visitLdcInsn(methodId);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "finishMethod", "(I)V", false);
             mv.visitInsn(Opcodes.ATHROW);
-        }
-
-        @Override
-        public void visitMaxs(int maxStack, int maxLocals)
-        {
-            __visitEnd();
             // visit the corresponding instructions
             super.visitMaxs(maxStack + 8, maxLocals + 2);
         }

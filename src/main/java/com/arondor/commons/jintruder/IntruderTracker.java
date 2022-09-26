@@ -14,6 +14,8 @@ public class IntruderTracker
 
     private static final boolean ASYNC_PROCESSING = true;
 
+    private final long startTime = System.nanoTime();
+
     private long intruderPeriodicDumpInterval = 0;
 
     public IntruderTracker()
@@ -102,7 +104,7 @@ public class IntruderTracker
         {
             if (DUMP_EVENTS)
             {
-                log(time + " [" + pid + "] " + (enter ? "enter" : "exit") + " (" + methodReference + ") "
+                log((time - startTime) + " [" + pid + "] " + (enter ? "enter" : "exit") + " (" + methodReference + ") "
                         + intruderCollector.getMethodName(methodReference));
             }
             intruderCollector.addCall(time, pid, enter, methodReference);
