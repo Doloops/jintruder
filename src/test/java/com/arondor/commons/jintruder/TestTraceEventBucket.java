@@ -12,14 +12,14 @@ public class TestTraceEventBucket
 
         Assert.assertEquals(23, bucket.getThreadId());
 
-        bucket.addEvent(123, 456, true);
+        bucket.addEvent(123, 456);
 
         Assert.assertEquals(1, bucket.size());
         Assert.assertEquals(123, bucket.getMethodId(0));
         Assert.assertEquals(456, bucket.getTime(0));
         Assert.assertTrue(bucket.getEnter(0));
 
-        bucket.addEvent(789, 951, false);
+        bucket.addEvent(-789, 951);
 
         Assert.assertEquals(2, bucket.size());
         Assert.assertEquals(789, bucket.getMethodId(1));
