@@ -2,7 +2,7 @@ package com.arondor.commons.jintruder;
 
 public class TraceEventBucket
 {
-    public static final int BUCKET_SIZE = 1024; // 32 * 1024 * 1024;
+    public static final int BUCKET_SIZE = 16 * 1024;
 
     private long threadId;
 
