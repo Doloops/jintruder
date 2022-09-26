@@ -48,7 +48,7 @@ public class Potato
     {
         for (long i = 0; i < 2_000_000_000; i++)
         {
-            cpuburnA(50);
+            cpuburnA(5);
         }
     }
 
