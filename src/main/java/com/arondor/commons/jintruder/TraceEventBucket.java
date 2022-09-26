@@ -2,13 +2,13 @@ package com.arondor.commons.jintruder;
 
 public class TraceEventBucket
 {
-    public static final int DEPTH_SIZE = 1024; // 32 * 1024 * 1024;
+    public static final int BUCKET_SIZE = 1024; // 32 * 1024 * 1024;
 
-    private final long threadId;
+    private long threadId;
 
-    private final long timeArray[] = new long[DEPTH_SIZE];
+    private final long timeArray[] = new long[BUCKET_SIZE];
 
-    private final int methodArray[] = new int[DEPTH_SIZE];
+    private final int methodArray[] = new int[BUCKET_SIZE];
 
     private int cursor = 0;
 
@@ -30,7 +30,7 @@ public class TraceEventBucket
 
     public final boolean isFull()
     {
-        return cursor == DEPTH_SIZE;
+        return cursor == BUCKET_SIZE;
     }
 
     public static interface Visitor
@@ -54,5 +54,11 @@ public class TraceEventBucket
     public final long getThreadId()
     {
         return threadId;
+    }
+
+    public void reuse(long threadId)
+    {
+        this.threadId = threadId;
+        this.cursor = 0;
     }
 }

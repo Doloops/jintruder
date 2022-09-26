@@ -1,5 +1,7 @@
 package com.arondor.commons.jintruder;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
@@ -35,8 +37,8 @@ public class IntruderTracker
         }
         log("Delayed interval, setting at=" + intruderPeriodicDumpInterval);
 
-        delayedRegistry = new ScheduledThreadPoolExecutor(1);
-        delayedRegistry.setThreadFactory(new ThreadFactory()
+        delayedRegistryExecutor = new ScheduledThreadPoolExecutor(1);
+        delayedRegistryExecutor.setThreadFactory(new ThreadFactory()
         {
 
             @Override
@@ -56,13 +58,13 @@ public class IntruderTracker
             public void run()
             {
                 log("[INTRUDER] : Shutting down delayedRegistry ...");
-                delayedRegistry.shutdown();
+                delayedRegistryExecutor.shutdown();
 
                 boolean processActiveQueues = true;
                 try
                 {
                     Thread.sleep(10);
-                    if (!delayedRegistry.awaitTermination(180, TimeUnit.SECONDS))
+                    if (!delayedRegistryExecutor.awaitTermination(180, TimeUnit.SECONDS))
                     {
                         log("[INTRUDER] : Could not wait delayedRegistry : timeout !");
                         processActiveQueues = false;
@@ -108,53 +110,45 @@ public class IntruderTracker
         {
             if (DUMP_EVENTS)
             {
-                log((time - startTime) + " [" + threadId + "] " + (enter ? "enter" : "exit") + " (" + methodReference
-                        + ") " + intruderCollector.getMethodName(methodReference));
+                log((time - startTime) + " [" + threadId + "] " + (enter ? "enter" : "exit") + " "
+                        + intruderCollector.getMethodName(methodReference));
             }
             intruderCollector.addCall(time, threadId, enter, methodReference);
         }
     };
 
-    protected static class TraceEventProcessor implements Runnable
+    private void visitBucket(TraceEventBucket bucket, TraceEventBucket.Visitor visitor)
     {
-        private final TraceEventBucket traceEvent;
-
-        private final TraceEventBucket.Visitor visitor;
-
-        public TraceEventProcessor(TraceEventBucket traceEvent, TraceEventBucket.Visitor visitor)
+        long start = System.currentTimeMillis();
+        bucket.visit(visitor);
+        long end = System.currentTimeMillis();
+        if (VERBOSE)
         {
-            this.traceEvent = traceEvent;
-            this.visitor = visitor;
+            log("[INTRUDER] : Processed " + bucket.size() + " events in " + (end - start) + "ms");
         }
-
-        @Override
-        public void run()
+        synchronized (IntruderTracker.this)
         {
-            long start = System.currentTimeMillis();
-            traceEvent.visit(visitor);
-            long end = System.currentTimeMillis();
-            if (VERBOSE)
+            if (recycledBuckets.size() < MAX_RECYCLED_BUCKETS)
             {
-                log("[INTRUDER] : Processed " + traceEvent.size() + " events in " + (end - start) + "ms");
+                recycledBuckets.add(bucket);
+            }
+            else
+            {
+                log("[INTRUDER] Dropping bucket because " + recycledBuckets.size() + " recycled, "
+                        + delayedRegistryExecutor.getQueue().size() + " buckets in queue.");
             }
         }
     }
 
-    private ScheduledThreadPoolExecutor delayedRegistry;
+    private final ScheduledThreadPoolExecutor delayedRegistryExecutor;
 
-    /**
-     * Singleton and static call part
-     */
-    private static IntruderTracker SINGLETON = new IntruderTracker();
+    private final ThreadLocal<TraceEventBucket> threadLocalEvent = new ThreadLocal<TraceEventBucket>();
 
-    protected static IntruderTracker getIntruderReferenceTracerSingleton()
-    {
-        return SINGLETON;
-    }
+    private final Map<Thread, TraceEventBucket> activeQueue = new java.util.concurrent.ConcurrentHashMap<Thread, TraceEventBucket>();
 
-    private ThreadLocal<TraceEventBucket> threadLocalEvent = new ThreadLocal<TraceEventBucket>();
+    private final List<TraceEventBucket> recycledBuckets = new LinkedList<TraceEventBucket>();
 
-    private Map<Thread, TraceEventBucket> activeQueue = new java.util.concurrent.ConcurrentHashMap<Thread, TraceEventBucket>();
+    private static final int MAX_RECYCLED_BUCKETS = 256;
 
     private final void startFinishMethod(int methodId, boolean startOrFinish)
     {
@@ -165,7 +159,18 @@ public class IntruderTracker
             TraceEventBucket bucket = threadLocalEvent.get();
             if (bucket == null)
             {
-                bucket = new TraceEventBucket(threadId);
+                synchronized (this)
+                {
+                    if (!recycledBuckets.isEmpty())
+                    {
+                        bucket = recycledBuckets.remove(0);
+                        bucket.reuse(threadId);
+                    }
+                }
+                if (bucket == null)
+                {
+                    bucket = new TraceEventBucket(threadId);
+                }
                 activeQueue.put(currentThread, bucket);
                 threadLocalEvent.set(bucket);
             }
@@ -174,7 +179,7 @@ public class IntruderTracker
                 if (bucket.getThreadId() != threadId)
                 {
                     throw new IllegalArgumentException("Invalid bucket thread ! current=" + threadId
-                            + "but bucket has theadId" + bucket.getThreadId());
+                            + " but bucket has theadId=" + bucket.getThreadId());
                 }
             }
             bucket.addEvent(methodId, System.nanoTime(), startOrFinish);
@@ -182,7 +187,14 @@ public class IntruderTracker
             {
                 threadLocalEvent.set(null);
                 activeQueue.remove(currentThread);
-                delayedRegistry.submit(new TraceEventProcessor(bucket, traceEventVisitor));
+
+                final TraceEventBucket finalBucket = bucket;
+                delayedRegistryExecutor.submit(() -> visitBucket(finalBucket, traceEventVisitor));
+
+                // log("[INTRUDER] delayed scheduler " +
+                // delayedRegistryExecutor.getQueue().size() + ", recycled
+                // buckets "
+                // + recycledBuckets.size());
 
                 mayPeriodicDump();
             }
@@ -203,7 +215,7 @@ public class IntruderTracker
         {
             log("Delayed interval,  now=" + now + ", last=" + lastPeriodicDump);
             lastPeriodicDump = now;
-            delayedRegistry.submit(new Runnable()
+            delayedRegistryExecutor.submit(new Runnable()
             {
                 @Override
                 public void run()
@@ -214,6 +226,16 @@ public class IntruderTracker
             });
 
         }
+    }
+
+    /**
+     * Singleton and static call part
+     */
+    private static final IntruderTracker SINGLETON = new IntruderTracker();
+
+    protected static IntruderTracker getIntruderReferenceTracerSingleton()
+    {
+        return SINGLETON;
     }
 
     /*

@@ -8,7 +8,6 @@ import com.arondor.commons.jintruder.collector.model.ClassInfo;
 import com.arondor.commons.jintruder.collector.model.ClassMap;
 import com.arondor.commons.jintruder.collector.model.MethodInfo;
 import com.arondor.commons.jintruder.collector.model.MethodStack;
-import com.arondor.commons.jintruder.collector.model.MethodStackItem;
 
 public class MemIntruderCollector implements IntruderCollector
 {
@@ -108,10 +107,10 @@ public class MemIntruderCollector implements IntruderCollector
             {
                 if (!methodStack.isEmpty())
                 {
-                    MethodInfo parent = methodStack.peek().getMethodCall();
+                    MethodInfo parent = methodStack.peekMethodCall();
                     parent.addSubCall(methodInfo);
                 }
-                methodStack.push(new MethodStackItem(methodInfo, time));
+                methodStack.push(methodInfo, time);
             }
             else
             {
@@ -128,40 +127,20 @@ public class MemIntruderCollector implements IntruderCollector
             return;
         }
 
-        while (!methodStack.isEmpty())
+        MethodInfo currentMethod = methodStack.peekMethodCall();
+        if (currentMethod != methodInfo)
         {
-            MethodStackItem currentStackItem = methodStack.peek();
-            long startTime = currentStackItem.getStartTime();
-            long timeSpent = time - startTime;
-            if (timeSpent < 0)
+            System.err.println("Jumped stack ! parent=" + currentMethod.getMethodName() + ", methodCall="
+                    + methodInfo.getMethodName());
+            if (methodStack.isEmpty())
             {
-                System.err.println("Spurious ! addCall() timeSpent=" + timeSpent + " at methodInfo=" + methodInfo + " ["
-                        + methodInfo.getMethodName() + "]" + "(startTime=" + startTime + ", time=" + time + ")");
-                timeSpent = 0;
+                System.err.println("Could not rewind stack for methodCall=" + methodInfo);
             }
-            currentStackItem.getMethodCall().appendInclusiveTime(timeSpent);
-
-            methodStack.pop();
-
-            if (!methodStack.isEmpty())
-            {
-                methodStack.peek().getMethodCall().appendCallerTime(currentStackItem.getMethodCall(), timeSpent);
-            }
-
-            if (currentStackItem.getMethodCall() == methodInfo)
-            {
-                break;
-            }
-            else
-            {
-                System.err.println(
-                        "Jumped stack ! parent = " + currentStackItem.getMethodCall() + ", methodCall=" + methodInfo);
-                if (methodStack.isEmpty())
-                {
-                    System.err.println("Could not rewind stack for methodCall=" + methodInfo);
-                }
-            }
+            return;
         }
+
+        methodStack.setFinishTime(time);
+        methodStack.pop();
     }
 
     @Override
@@ -179,10 +158,7 @@ public class MemIntruderCollector implements IntruderCollector
             if (!threadEntry.getValue().isEmpty())
             {
                 System.err.println("Unclean stack : at thread : " + threadEntry.getKey());
-                for (MethodStackItem call : threadEntry.getValue())
-                {
-                    System.err.println(" * " + call.getMethodCall());
-                }
+                threadEntry.getValue().dumpStack();
             }
         }
     }
