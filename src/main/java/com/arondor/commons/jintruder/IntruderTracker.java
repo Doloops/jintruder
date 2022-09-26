@@ -17,6 +17,8 @@ public class IntruderTracker
 
     private static final int MAX_QUEUED_BUCKETS = 1_000_000;
 
+    private static final long BIRTH_TIME = System.nanoTime();
+
     private long intruderPeriodicDumpInterval = 0;
 
     private final IntruderCollector intruderCollector = new MemIntruderCollector();
@@ -183,7 +185,7 @@ public class IntruderTracker
                         + " but bucket has theadId=" + bucket.getThreadId());
             }
         }
-        bucket.addEvent(methodId, System.nanoTime(), startOrFinish);
+        bucket.addEvent(methodId, System.nanoTime() - BIRTH_TIME, startOrFinish);
         if (bucket.isFull())
         {
             threadLocalEvent.set(null);
