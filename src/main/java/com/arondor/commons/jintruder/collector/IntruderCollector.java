@@ -9,8 +9,6 @@ public interface IntruderCollector
 
     String getMethodName(int methodReference);
 
-    void addCall(long time, long threadId, boolean enter, int methodReference);
-
     void processBucket(TraceEventBucket bucket);
 
     ClassMap getClassMap();

@@ -83,51 +83,38 @@ public class MemIntruderCollector implements IntruderCollector
     }
 
     @Override
-    public final void addCall(long time, long threadId, boolean enter, int referenceId)
-    {
-        MethodInfo methodCall = methodReferenceMap.get(referenceId);
-        if (methodCall == null)
-        {
-            System.err.println("Could not resolve : " + referenceId);
-            return;
-        }
-        addCall(time, threadId, enter, referenceId, methodCall);
-    }
-
-    @Override
     public void processBucket(TraceEventBucket bucket)
     {
-        for (int idx = 0; idx < bucket.size(); idx++)
-        {
-            long time = bucket.getTime(idx);
-            int methodId = bucket.getMethodId(idx);
-            boolean enter = bucket.getEnter(idx);
-            addCall(time, bucket.getThreadId(), enter, methodId);
-        }
-    }
-
-    private final void addCall(long time, long threadId, boolean enter, int referenceId, MethodInfo methodInfo)
-    {
-        if (enter && methodInfo == null)
-        {
-            throw new IllegalArgumentException("Invalid !");
-        }
-        MethodStack methodStack = getPerThreadStack(threadId);
+        MethodStack methodStack = getPerThreadStack(bucket.getThreadId());
 
         synchronized (methodStack)
         {
-            if (enter)
+            for (int idx = 0; idx < bucket.size(); idx++)
             {
-                if (!methodStack.isEmpty())
+                long time = bucket.getTime(idx);
+                int methodId = bucket.getMethodId(idx);
+                boolean enter = bucket.getEnter(idx);
+
+                MethodInfo methodInfo = methodReferenceMap.get(methodId);
+                if (methodInfo == null)
                 {
-                    MethodInfo parent = methodStack.peekMethodCall();
-                    parent.addSubCall(methodInfo);
+                    System.err.println("Could not resolve : " + methodId);
+                    continue;
                 }
-                methodStack.push(methodInfo, time);
-            }
-            else
-            {
-                methodCallFinished(time, methodInfo, methodStack);
+
+                if (enter)
+                {
+                    if (!methodStack.isEmpty())
+                    {
+                        MethodInfo parent = methodStack.peekMethodCall();
+                        parent.addSubCall(methodInfo);
+                    }
+                    methodStack.push(methodInfo, time);
+                }
+                else
+                {
+                    methodCallFinished(time, methodInfo, methodStack);
+                }
             }
         }
     }

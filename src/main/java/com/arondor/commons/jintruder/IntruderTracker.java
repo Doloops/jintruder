@@ -33,6 +33,11 @@ public class IntruderTracker
 
     private boolean shutdown = false;
 
+    private static void log(String message)
+    {
+        System.err.println(message);
+    }
+
     private final Thread backgroundThread = new Thread()
     {
         @Override
@@ -115,11 +120,6 @@ public class IntruderTracker
             }
         });
         backgroundThread.start();
-    }
-
-    private static void log(String message)
-    {
-        System.err.println(message);
     }
 
     private synchronized int doDeclareMethod(String className, String methodName)
@@ -229,15 +229,9 @@ public class IntruderTracker
      */
     private static final IntruderTracker SINGLETON = new IntruderTracker();
 
-    protected static IntruderTracker getIntruderReferenceTracerSingleton()
-    {
-        return SINGLETON;
-    }
-
     /*
      * Public API
      */
-
     public static int declareMethod(String className, String methodName)
     {
         return SINGLETON.doDeclareMethod(className, methodName);
