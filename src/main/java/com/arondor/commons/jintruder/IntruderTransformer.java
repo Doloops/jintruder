@@ -27,9 +27,11 @@ public class IntruderTransformer implements ClassFileTransformer
 
     private List<String> tracedClassRegexBlacklist = new ArrayList<String>();
 
-    public static boolean INTRUDER_NO_DECORATION = false;
+    public static boolean JINTRUDER_NO_DECORATION = false;
 
-    public static boolean INTRUDER_LOG = false;
+    public static boolean JINTRUDER_LOG = false;
+
+    public static boolean JINTRUDER_DUMP_BYTECODE = false;
 
     private boolean getBooleanProperty(String name)
     {
@@ -43,7 +45,7 @@ public class IntruderTransformer implements ClassFileTransformer
 
     private final boolean isLog()
     {
-        return INTRUDER_LOG;
+        return JINTRUDER_LOG;
     }
 
     private final void log(String message)
@@ -53,8 +55,9 @@ public class IntruderTransformer implements ClassFileTransformer
 
     public IntruderTransformer()
     {
-        INTRUDER_NO_DECORATION = getBooleanProperty("jintruder.nodecoration");
-        INTRUDER_LOG = getBooleanProperty("jintruder.log");
+        JINTRUDER_NO_DECORATION = getBooleanProperty("jintruder.nodecoration");
+        JINTRUDER_LOG = getBooleanProperty("jintruder.log");
+        JINTRUDER_DUMP_BYTECODE = getBooleanProperty("jintruder.dump.bytecode");
         String intruderClasses = System.getProperty("jintruder.classes");
         if (intruderClasses == null || intruderClasses.trim().isEmpty())
         {
@@ -81,7 +84,7 @@ public class IntruderTransformer implements ClassFileTransformer
 
     private final boolean isClassTraced(final String className)
     {
-        if (INTRUDER_NO_DECORATION)
+        if (JINTRUDER_NO_DECORATION)
         {
             return false;
         }
@@ -92,11 +95,6 @@ public class IntruderTransformer implements ClassFileTransformer
             return false;
         }
 
-        return doIsClassTraced(className);
-    }
-
-    private boolean doIsClassTraced(final String className)
-    {
         for (String prefix : tracedClassPrefixes)
         {
             if (className.startsWith(prefix))
@@ -149,10 +147,12 @@ public class IntruderTransformer implements ClassFileTransformer
                 cr.accept(ca, 0);
                 byte[] retVal = cw.toByteArray();
 
-                FileOutputStream fos = new FileOutputStream("/tmp/" + className.replace('/', '_') + ".class");
-                fos.write(retVal);
-                fos.close();
-
+                if (JINTRUDER_DUMP_BYTECODE)
+                {
+                    FileOutputStream fos = new FileOutputStream("/tmp/" + className.replace('/', '_') + ".class");
+                    fos.write(retVal);
+                    fos.close();
+                }
                 return retVal;
             }
             catch (RuntimeException e)

@@ -16,20 +16,20 @@ public class Potato
         Assert.assertEquals(1_000, j);
     }
 
-    public void cpuburnA(int howmany)
+    public void cpuburnA(long howmany)
     {
-        int j = 0;
-        for (int i = 0; i < howmany; i++)
+        long j = 0;
+        for (long i = 0; i < howmany; i++)
         {
             j++;
         }
         Assert.assertEquals(howmany, j);
     }
 
-    public void cpuburnB(int howmany)
+    public void cpuburnB(long howmany)
     {
-        int j = 0;
-        for (int i = 0; i < howmany; i++)
+        long j = 0;
+        for (long i = 0; i < howmany; i++)
         {
             j++;
         }
@@ -39,8 +39,17 @@ public class Potato
     @Test
     public void testDouble()
     {
-        cpuburnA(10_000);
-        cpuburnB(20_000);
+        cpuburnA(2_000_000_000L);
+        cpuburnB(4_000_000_000L);
+    }
+
+    @Test
+    public void testALot()
+    {
+        for (long i = 0; i < 2_000_000_000; i++)
+        {
+            cpuburnA(2_000);
+        }
     }
 
     @Test

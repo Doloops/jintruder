@@ -5,18 +5,26 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import com.arondor.commons.jintruder.collector.CacheGrindIntruderCollector;
 import com.arondor.commons.jintruder.collector.IntruderCollector;
+import com.arondor.commons.jintruder.collector.MemIntruderCollector;
+import com.arondor.commons.jintruder.sink.CacheGrindSink;
+import com.arondor.commons.jintruder.sink.IntruderSink;
 
 public class IntruderTracker
 {
     private static final boolean VERBOSE = false;
+
+    private static final boolean DUMP_EVENTS = false;
 
     private static final boolean ASYNC_PROCESSING = true;
 
     private final long startTime = System.nanoTime();
 
     private long intruderPeriodicDumpInterval = 0;
+
+    private final IntruderCollector intruderCollector = new MemIntruderCollector();
+
+    private final IntruderSink intruderSink = new CacheGrindSink();
 
     public IntruderTracker()
     {
@@ -78,7 +86,7 @@ public class IntruderTracker
                     log("[INTRUDER] : will not process active queues due to previous errors.");
                 }
 
-                intruderCollector.dumpCollection();
+                intruderSink.dumpAll(intruderCollector.getClassMap());
             }
         });
     }
@@ -88,26 +96,22 @@ public class IntruderTracker
         System.err.println(message);
     }
 
-    private IntruderCollector intruderCollector = new CacheGrindIntruderCollector();
-
     private synchronized int doDeclareMethod(String className, String methodName)
     {
         return intruderCollector.registerMethodReference(className, methodName);
     }
 
-    private static final boolean DUMP_EVENTS = true;
-
     protected final TraceEventBucket.Visitor traceEventVisitor = new TraceEventBucket.Visitor()
     {
         @Override
-        public void visit(int methodReference, long pid, long time, boolean enter)
+        public void visit(int methodReference, long threadId, long time, boolean enter)
         {
             if (DUMP_EVENTS)
             {
-                log((time - startTime) + " [" + pid + "] " + (enter ? "enter" : "exit") + " (" + methodReference + ") "
-                        + intruderCollector.getMethodName(methodReference));
+                log((time - startTime) + " [" + threadId + "] " + (enter ? "enter" : "exit") + " (" + methodReference
+                        + ") " + intruderCollector.getMethodName(methodReference));
             }
-            intruderCollector.addCall(time, pid, enter, methodReference);
+            intruderCollector.addCall(time, threadId, enter, methodReference);
         }
     };
 
@@ -154,28 +158,38 @@ public class IntruderTracker
 
     private final void startFinishMethod(int methodId, boolean startOrFinish)
     {
+        Thread currentThread = Thread.currentThread();
+        long threadId = currentThread.getId();
         if (ASYNC_PROCESSING)
         {
-            TraceEventBucket traceEvent = threadLocalEvent.get();
-            if (traceEvent == null)
+            TraceEventBucket bucket = threadLocalEvent.get();
+            if (bucket == null)
             {
-                traceEvent = new TraceEventBucket(Thread.currentThread().getId());
-                activeQueue.put(Thread.currentThread(), traceEvent);
-                threadLocalEvent.set(traceEvent);
+                bucket = new TraceEventBucket(threadId);
+                activeQueue.put(currentThread, bucket);
+                threadLocalEvent.set(bucket);
             }
-            traceEvent.addEvent(methodId, System.nanoTime(), startOrFinish);
-            if (traceEvent.isFull())
+            else
             {
-                activeQueue.remove(Thread.currentThread());
-                delayedRegistry.submit(new TraceEventProcessor(traceEvent, traceEventVisitor));
+                if (bucket.getThreadId() != threadId)
+                {
+                    throw new IllegalArgumentException("Invalid bucket thread ! current=" + threadId
+                            + "but bucket has theadId" + bucket.getThreadId());
+                }
+            }
+            bucket.addEvent(methodId, System.nanoTime(), startOrFinish);
+            if (bucket.isFull())
+            {
                 threadLocalEvent.set(null);
+                activeQueue.remove(currentThread);
+                delayedRegistry.submit(new TraceEventProcessor(bucket, traceEventVisitor));
 
                 mayPeriodicDump();
             }
         }
         else
         {
-            traceEventVisitor.visit(methodId, Thread.currentThread().getId(), System.nanoTime(), startOrFinish);
+            traceEventVisitor.visit(methodId, threadId, System.nanoTime(), startOrFinish);
             mayPeriodicDump();
         }
     }
@@ -195,7 +209,7 @@ public class IntruderTracker
                 public void run()
                 {
                     log("Delayed interval, dump now !");
-                    intruderCollector.dumpCollection();
+                    intruderSink.dumpAll(intruderCollector.getClassMap());
                 }
             });
 
