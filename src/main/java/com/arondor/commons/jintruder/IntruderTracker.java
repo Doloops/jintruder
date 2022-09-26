@@ -93,7 +93,7 @@ public class IntruderTracker
         return intruderCollector.registerMethodReference(className, methodName);
     }
 
-    private static final boolean DUMP_EVENTS = false;
+    private static final boolean DUMP_EVENTS = true;
 
     protected final TraceEventBucket.Visitor traceEventVisitor = new TraceEventBucket.Visitor()
     {
@@ -102,7 +102,8 @@ public class IntruderTracker
         {
             if (DUMP_EVENTS)
             {
-                log("time=" + time + ", pid=" + pid + ", enter=" + enter + ", ref=" + methodReference);
+                log(time + " [" + pid + "] " + (enter ? "enter" : "exit") + " (" + methodReference + ") "
+                        + intruderCollector.getMethodName(methodReference));
             }
             intruderCollector.addCall(time, pid, enter, methodReference);
         }

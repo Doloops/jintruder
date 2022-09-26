@@ -66,6 +66,13 @@ public class CacheGrindIntruderCollector implements IntruderCollector
         return methodCall.getReferenceId();
     }
 
+    @Override
+    public String getMethodName(int methodReference)
+    {
+        MethodInfo info = methodReferenceMap.get(methodReference);
+        return info.getClassInfo().getClassName() + "::" + info.getMethodName();
+    }
+
     private ClassInfo findClassName(String className)
     {
         ClassInfo clazz = classMap.get(className);
@@ -91,7 +98,6 @@ public class CacheGrindIntruderCollector implements IntruderCollector
 
     private final void addCall(long time, long pid, boolean enter, int referenceId, MethodInfo methodInfo)
     {
-        log("[" + pid + "] t=" + time + ", " + (enter ? ">" : "<") + referenceId);
         if (enter && methodInfo == null)
         {
             throw new IllegalArgumentException("Invalid !");

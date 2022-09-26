@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -61,10 +62,15 @@ public class IntruderClassAdapter extends ClassVisitor
     {
         private final String methodName;
 
+        private final Label start = new Label(), end = new Label(), handler = new Label();
+
+        private final int methodId;
+
         public AddDecorationMethodVisitor(MethodVisitor mv, String methodName, String signature)
         {
             super(Opcodes.ASM8, mv);
             this.methodName = methodName;
+            this.methodId = IntruderTracker.declareMethod(className, methodName);
 
             if (isLog())
             {
@@ -75,24 +81,48 @@ public class IntruderClassAdapter extends ClassVisitor
         @Override
         public void visitCode()
         {
-            int methodId = IntruderTracker.declareMethod(className, methodName);
-
-            mv.visitCode();
             mv.visitLdcInsn(methodId);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "startMethod", "(I)V", false);
+
+            mv.visitLabel(start);
+            mv.visitCode();
+        }
+
+        public void __visitEnd()
+        {
+            mv.visitTryCatchBlock(start, end, end, null);
+            mv.visitLabel(end);
+
+            mv.visitLdcInsn(methodId);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "finishMethod", "(I)V", false);
+            mv.visitInsn(Opcodes.ATHROW);
+        }
+
+        @Override
+        public void visitMaxs(int maxStack, int maxLocals)
+        {
+            __visitEnd();
+            // visit the corresponding instructions
+            super.visitMaxs(maxStack + 8, maxLocals + 2);
         }
 
         @Override
         public void visitInsn(int opcode)
         {
-            if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) || opcode == Opcodes.ATHROW)
+            if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN)
             {
-                int methodId = IntruderTracker.declareMethod(className, methodName);
-
                 mv.visitLdcInsn(methodId);
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, INTRUDER_TRACKER_CLASS, "finishMethod", "(I)V", false);
+                mv.visitInsn(opcode);
             }
-            mv.visitInsn(opcode);
+            else if (opcode == Opcodes.ATHROW)
+            {
+                mv.visitInsn(opcode);
+            }
+            else
+            {
+                mv.visitInsn(opcode);
+            }
         }
     }
 

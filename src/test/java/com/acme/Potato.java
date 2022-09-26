@@ -44,6 +44,32 @@ public class Potato
     }
 
     @Test
+    public void testWithException()
+    {
+        try
+        {
+            thrownButCaught();
+            Assert.fail("Should have caught !");
+        }
+        catch (RuntimeException e)
+        {
+
+        }
+    }
+
+    private void thrownButCaught()
+    {
+        Tomato tomato = new Tomato();
+        tomato.sleep3();
+        doThrow();
+    }
+
+    private void doThrow()
+    {
+        throw new RuntimeException("Fire !");
+    }
+
+    @Test
     public void testTomato1()
     {
         Tomato tomato = new Tomato();
