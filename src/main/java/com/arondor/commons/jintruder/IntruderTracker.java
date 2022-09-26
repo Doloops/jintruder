@@ -75,6 +75,27 @@ public class IntruderTracker
         }
     };
 
+    private volatile long ticker = System.nanoTime() - BIRTH_TIME;
+
+    private final Thread tickerThread = new Thread()
+    {
+        @Override
+        public void run()
+        {
+            while (true)
+            {
+                ticker = System.nanoTime() - BIRTH_TIME;
+                try
+                {
+                    Thread.sleep(0, 100);
+                }
+                catch (InterruptedException e)
+                {
+                }
+            }
+        }
+    };
+
     public IntruderTracker()
     {
         String sInterval = System.getProperty("jintruder.dumpInterval");
@@ -83,6 +104,10 @@ public class IntruderTracker
             intruderPeriodicDumpInterval = Integer.parseInt(sInterval) * 1000;
         }
         log("Delayed interval, setting at=" + intruderPeriodicDumpInterval);
+
+        tickerThread.setName("IntruderTicker");
+        tickerThread.setDaemon(true);
+        tickerThread.start();
 
         backgroundThread.setName("IntruderBackgroundThread");
         backgroundThread.setDaemon(true);
@@ -154,11 +179,44 @@ public class IntruderTracker
 
     private final void startFinishMethod(int methodId, boolean startOrFinish)
     {
+        if (queuedBuckets.size() > MAX_QUEUED_BUCKETS)
+            return;
+
+        TraceEventBucket bucket = findCurrentBucket();
+        long time = ticker;
+        bucket.addEvent(methodId, time, startOrFinish);
+        if (bucket.isFull())
+        {
+            threadLocalEvent.set(null);
+            activeBuckets.remove(Thread.currentThread());
+
+            boolean mayNotify = false;
+            synchronized (queuedBuckets)
+            {
+                queuedBuckets.add(bucket);
+                if (queuedBuckets.size() == MAX_QUEUED_BUCKETS)
+                {
+                    log("Queued buckets reached maximum " + MAX_QUEUED_BUCKETS + ", recyled=" + recycledBuckets.size()
+                            + ", active=" + activeBuckets.size());
+                    mayNotify = true;
+                }
+            }
+
+            if (mayNotify)
+            {
+                synchronized (backgroundThread)
+                {
+                    backgroundThread.notify();
+                }
+            }
+        }
+    }
+
+    private TraceEventBucket findCurrentBucket()
+    {
         Thread currentThread = Thread.currentThread();
         long threadId = currentThread.getId();
 
-        if (queuedBuckets.size() > MAX_QUEUED_BUCKETS)
-            return;
         TraceEventBucket bucket = threadLocalEvent.get();
         if (bucket == null)
         {
@@ -185,32 +243,7 @@ public class IntruderTracker
                         + " but bucket has theadId=" + bucket.getThreadId());
             }
         }
-        bucket.addEvent(methodId, System.nanoTime() - BIRTH_TIME, startOrFinish);
-        if (bucket.isFull())
-        {
-            threadLocalEvent.set(null);
-            activeBuckets.remove(currentThread);
-
-            boolean mayNotify = false;
-            synchronized (queuedBuckets)
-            {
-                queuedBuckets.add(bucket);
-                if (queuedBuckets.size() == MAX_QUEUED_BUCKETS)
-                {
-                    log("Queued buckets reached maximum " + MAX_QUEUED_BUCKETS + ", recyled=" + recycledBuckets.size()
-                            + ", active=" + activeBuckets.size());
-                    mayNotify = true;
-                }
-            }
-
-            if (mayNotify)
-            {
-                synchronized (backgroundThread)
-                {
-                    backgroundThread.notify();
-                }
-            }
-        }
+        return bucket;
     }
 
     private long lastPeriodicDump = System.currentTimeMillis();
