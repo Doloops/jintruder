@@ -41,10 +41,6 @@ public class IntruderClassAdapter extends ClassVisitor
         super.visit(version, access, name, signature, superName, interfaces);
     }
 
-    private int methodCount = 0;
-
-    private String intruderFieldName = null;
-
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions)
     {
