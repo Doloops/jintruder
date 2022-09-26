@@ -1,6 +1,6 @@
 package com.arondor.commons.jintruder;
 
-public class TraceEventBucket
+public final class TraceEventBucket
 {
     public static final int BUCKET_SIZE = 16 * 1024;
 

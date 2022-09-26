@@ -183,31 +183,35 @@ public class IntruderTracker
             return;
 
         TraceEventBucket bucket = findCurrentBucket();
-        long time = ticker;
-        bucket.addEvent(methodId, time);
+        bucket.addEvent(methodId, ticker);
         if (bucket.isFull())
         {
-            threadLocalEvent.set(null);
-            activeBuckets.remove(Thread.currentThread());
+            pushFullBucket(bucket);
+        }
+    }
 
-            boolean mayNotify = false;
-            synchronized (queuedBuckets)
+    private void pushFullBucket(TraceEventBucket bucket)
+    {
+        threadLocalEvent.set(null);
+        activeBuckets.remove(Thread.currentThread());
+
+        boolean mayNotify = false;
+        synchronized (queuedBuckets)
+        {
+            queuedBuckets.add(bucket);
+            if (queuedBuckets.size() == MAX_QUEUED_BUCKETS)
             {
-                queuedBuckets.add(bucket);
-                if (queuedBuckets.size() == MAX_QUEUED_BUCKETS)
-                {
-                    log("Queued buckets reached maximum " + MAX_QUEUED_BUCKETS + ", recyled=" + recycledBuckets.size()
-                            + ", active=" + activeBuckets.size());
-                    mayNotify = true;
-                }
+                log("Queued buckets reached maximum " + MAX_QUEUED_BUCKETS + ", recyled=" + recycledBuckets.size()
+                        + ", active=" + activeBuckets.size());
+                mayNotify = true;
             }
+        }
 
-            if (mayNotify)
+        if (mayNotify)
+        {
+            synchronized (backgroundThread)
             {
-                synchronized (backgroundThread)
-                {
-                    backgroundThread.notify();
-                }
+                backgroundThread.notify();
             }
         }
     }
@@ -272,6 +276,12 @@ public class IntruderTracker
         return SINGLETON.doDeclareMethod(className, methodName);
     }
 
+    /**
+     * Fast start/finish method decoration calls
+     * 
+     * @param methodId
+     *            positive for method start, negative for method end
+     */
     public static final void startFinishMethod(int methodId)
     {
         SINGLETON.doAddCallMethod(methodId);
