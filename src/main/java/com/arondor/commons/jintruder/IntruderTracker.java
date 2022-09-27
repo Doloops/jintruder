@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.arondor.commons.jintruder.collector.IntruderCollector;
 import com.arondor.commons.jintruder.collector.MemIntruderCollector;
+import com.arondor.commons.jintruder.collector.model.ClassMap;
 import com.arondor.commons.jintruder.sink.CacheGrindSink;
 import com.arondor.commons.jintruder.sink.IntruderSink;
 
@@ -136,11 +137,7 @@ public class IntruderTracker
                 }
                 if (processActiveQueues)
                 {
-                    log("Processing " + activeBuckets.size() + " per-thread active queues...");
-                    for (TraceEventBucket activeEvent : activeBuckets.values())
-                    {
-                        intruderCollector.processBucket(activeEvent);
-                    }
+                    processActiveQueues();
                 }
                 else
                 {
@@ -169,8 +166,8 @@ public class IntruderTracker
             }
             else
             {
-                debug("Dropping bucket because " + recycledBuckets.size() + " recycled, "
-                        + queuedBuckets.size() + " buckets in queue.");
+                debug("Dropping bucket because " + recycledBuckets.size() + " recycled, " + queuedBuckets.size()
+                        + " buckets in queue.");
             }
         }
     }
@@ -261,6 +258,15 @@ public class IntruderTracker
         }
     }
 
+    private void processActiveQueues()
+    {
+        log("Processing " + activeBuckets.size() + " per-thread active queues...");
+        for (TraceEventBucket activeEvent : activeBuckets.values())
+        {
+            intruderCollector.processBucket(activeEvent);
+        }
+    }
+
     /**
      * Singleton and static call part
      */
@@ -285,4 +291,20 @@ public class IntruderTracker
         SINGLETON.doAddCallMethod(methodId);
     }
 
+    public static final ClassMap getClassMap()
+    {
+        synchronized (SINGLETON.backgroundThread)
+        {
+            SINGLETON.backgroundThread.notify();
+        }
+        SINGLETON.processActiveQueues();
+        try
+        {
+            Thread.sleep(100);
+        }
+        catch (InterruptedException e)
+        {
+        }
+        return SINGLETON.intruderCollector.getClassMap();
+    }
 }

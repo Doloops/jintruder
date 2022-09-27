@@ -2,7 +2,6 @@ package com.arondor.commons.jintruder.collector.model;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class MethodInfo
 {
@@ -55,9 +54,26 @@ public class MethodInfo
         return parent.getClassName() + ":" + getMethodName();
     }
 
-    public Set<Map.Entry<MethodInfo, CallInfo>> getSubCalls()
+    public Map<MethodInfo, CallInfo> getSubCalls()
     {
-        return subCalls.entrySet();
+        return subCalls;
+    }
+
+    public CallInfo getSubCall(String methodName)
+    {
+        for (Map.Entry<MethodInfo, CallInfo> entry : subCalls.entrySet())
+        {
+            if (entry.getKey().getMethodName().equals(methodName))
+            {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    public long getTotalTime()
+    {
+        return inclusiveTime;
     }
 
     public long getPrivateTime()

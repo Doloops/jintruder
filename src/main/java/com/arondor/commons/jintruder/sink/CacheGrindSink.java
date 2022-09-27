@@ -72,7 +72,7 @@ public class CacheGrindSink implements IntruderSink
             return;
         printStream.println("fn=" + protectMethodName(methodCall));
         printStream.println("0 " + methodCall.getPrivateTime());
-        for (Map.Entry<MethodInfo, CallInfo> entry : methodCall.getSubCalls())
+        for (Map.Entry<MethodInfo, CallInfo> entry : methodCall.getSubCalls().entrySet())
         {
             MethodInfo subCall = entry.getKey();
             printStream.println("cfl=" + protectClassName(subCall.getClassInfo()));

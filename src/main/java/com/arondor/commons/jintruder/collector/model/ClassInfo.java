@@ -33,6 +33,11 @@ public class ClassInfo
         return methodCall;
     }
 
+    public Map<String, MethodInfo> getMethodMap()
+    {
+        return methodCalls;
+    }
+
     public Collection<MethodInfo> getMethodCalls()
     {
         return methodCalls.values();

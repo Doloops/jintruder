@@ -14,6 +14,8 @@ public class MemIntruderCollector implements IntruderCollector
 {
     private static final boolean VERBOSE = false;
 
+    private static final boolean DUMP_EVENTS = false;
+
     private boolean dumpUncleanThreads = false;
 
     private Map<Long, MethodStack> perThreadStack = new HashMap<Long, MethodStack>();
@@ -101,7 +103,11 @@ public class MemIntruderCollector implements IntruderCollector
                     System.err.println("Could not resolve : " + methodId);
                     continue;
                 }
-
+                if (DUMP_EVENTS)
+                {
+                    System.err.println(time + "[" + bucket.getThreadId() + "] " + (enter ? ">" : "<") + " "
+                            + methodInfo.getMethodName());
+                }
                 if (enter)
                 {
                     if (!methodStack.isEmpty())
