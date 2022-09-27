@@ -14,7 +14,7 @@ public class MemIntruderCollector implements IntruderCollector
 {
     private static final boolean VERBOSE = false;
 
-    private static final boolean DUMP_EVENTS = false;
+    private static final boolean DUMP_EVENTS = true;
 
     private boolean dumpUncleanThreads = false;
 

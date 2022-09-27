@@ -28,8 +28,6 @@ public class IntruderTracker
 
     private final List<TraceEventBucket> queuedBuckets = new LinkedList<TraceEventBucket>();
 
-    private final ThreadLocal<TraceEventBucket> threadLocalEvent = new ThreadLocal<TraceEventBucket>();
-
     private final Map<Thread, TraceEventBucket> activeBuckets = new java.util.concurrent.ConcurrentHashMap<Thread, TraceEventBucket>();
 
     private final List<TraceEventBucket> recycledBuckets = new LinkedList<TraceEventBucket>();
@@ -187,7 +185,6 @@ public class IntruderTracker
 
     private void pushFullBucket(TraceEventBucket bucket)
     {
-        threadLocalEvent.set(null);
         activeBuckets.remove(Thread.currentThread());
 
         boolean mayNotify = false;
@@ -216,7 +213,7 @@ public class IntruderTracker
         Thread currentThread = Thread.currentThread();
         long threadId = currentThread.getId();
 
-        TraceEventBucket bucket = threadLocalEvent.get();
+        TraceEventBucket bucket = activeBuckets.get(currentThread);
         if (bucket == null)
         {
             synchronized (this)
@@ -232,7 +229,6 @@ public class IntruderTracker
                 bucket = new TraceEventBucket(threadId);
             }
             activeBuckets.put(currentThread, bucket);
-            threadLocalEvent.set(bucket);
         }
         else
         {
@@ -265,6 +261,7 @@ public class IntruderTracker
         {
             intruderCollector.processBucket(activeEvent);
         }
+        activeBuckets.clear();
     }
 
     /**
@@ -306,5 +303,10 @@ public class IntruderTracker
         {
         }
         return SINGLETON.intruderCollector.getClassMap();
+    }
+
+    public static void reset()
+    {
+        getClassMap().clear();
     }
 }
