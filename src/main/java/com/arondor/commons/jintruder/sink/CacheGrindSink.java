@@ -68,7 +68,7 @@ public class CacheGrindSink implements IntruderSink
 
     private void dump(PrintStream printStream, MethodInfo methodCall)
     {
-        if (methodCall.getPrivateTime() == 0)
+        if (methodCall.getTotalTime() == 0)
             return;
         printStream.println("fn=" + protectMethodName(methodCall));
         printStream.println("0 " + methodCall.getPrivateTime());

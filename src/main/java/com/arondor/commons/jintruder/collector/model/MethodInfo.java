@@ -59,11 +59,12 @@ public class MethodInfo
         return subCalls;
     }
 
-    public CallInfo getSubCall(String methodName)
+    public CallInfo getSubCall(String className, String methodName)
     {
         for (Map.Entry<MethodInfo, CallInfo> entry : subCalls.entrySet())
         {
-            if (entry.getKey().getMethodName().equals(methodName))
+            if (entry.getKey().getClassInfo().getClassName().equals(className)
+                    && entry.getKey().getMethodName().equals(methodName))
             {
                 return entry.getValue();
             }
