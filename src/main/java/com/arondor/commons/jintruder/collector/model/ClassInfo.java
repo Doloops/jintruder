@@ -45,6 +45,6 @@ public class ClassInfo
 
     public long getTotalTime()
     {
-        return methodCalls.values().stream().map(MethodInfo::getPrivateTime).reduce(0L, Long::sum);
+        return methodCalls.values().stream().map(MethodInfo::getTotalTime).reduce(0L, Long::sum);
     }
 }

@@ -257,9 +257,10 @@ public class IntruderTracker
     private void processActiveQueues()
     {
         log("Processing " + activeBuckets.size() + " per-thread active queues...");
-        for (TraceEventBucket activeEvent : activeBuckets.values())
+        for (TraceEventBucket activeBucket : activeBuckets.values())
         {
-            intruderCollector.processBucket(activeEvent);
+            intruderCollector.processBucket(activeBucket);
+            activeBucket.reset();
         }
         activeBuckets.clear();
     }

@@ -25,6 +25,11 @@ public final class TraceEventBucket
         this.cursor = cursor + 1;
     }
 
+    public final void reset()
+    {
+        cursor = 0;
+    }
+
     public final boolean isFull()
     {
         return cursor == BUCKET_SIZE;
