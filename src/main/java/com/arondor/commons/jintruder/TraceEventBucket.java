@@ -17,12 +17,20 @@ public final class TraceEventBucket
         this.threadId = threadId;
     }
 
-    public final void addEvent(int methodReference, long time)
+    public final void addEvent(final int methodReference, final long time)
     {
         int cursor = this.cursor;
         timeArray[cursor] = time;
         methodArray[cursor] = methodReference;
         this.cursor = cursor + 1;
+    }
+
+    public static final void __addEvent(final TraceEventBucket bucket, final int methodReference, final long time)
+    {
+        int cursor = bucket.cursor;
+        bucket.timeArray[cursor] = time;
+        bucket.methodArray[cursor] = methodReference;
+        bucket.cursor = cursor + 1;
     }
 
     public final void reset()

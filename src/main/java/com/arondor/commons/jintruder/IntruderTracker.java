@@ -13,7 +13,7 @@ import com.arondor.commons.jintruder.sink.IntruderSink;
 
 public class IntruderTracker
 {
-    private static final boolean VERBOSE = false;
+    private static final boolean VERBOSE = true;
 
     private static final int MAX_RECYCLED_BUCKETS = 8192;
 
@@ -81,9 +81,8 @@ public class IntruderTracker
 
                 if (VERBOSE)
                 {
-                    System.err.println("Buckets active=" + activeBuckets.size() + ", fromDeadThreads="
-                            + bucketsFromDeadThreads.size() + ", queued=" + queuedBuckets.size() + ", recycled="
-                            + recycledBuckets.size());
+                    log("Buckets active=" + activeBuckets.size() + ", fromDeadThreads=" + bucketsFromDeadThreads.size()
+                            + ", queued=" + queuedBuckets.size() + ", recycled=" + recycledBuckets.size());
                 }
 
                 /*
@@ -209,13 +208,31 @@ public class IntruderTracker
     private final void doAddCallMethod(int methodId)
     {
         if (queuedBuckets.size() > MAX_QUEUED_BUCKETS)
+        {
+            tellTheWorldIAmOverwhelmed();
             return;
+        }
 
         TraceEventBucket bucket = findCurrentBucket();
-        bucket.addEvent(methodId, ticker);
+        TraceEventBucket.__addEvent(bucket, methodId, ticker);
         if (bucket.isFull())
         {
             pushFullBucket(bucket);
+        }
+    }
+
+    private long lastErrorMessage = 0;
+
+    private static final long SPAM_PERIOD = 10_000;
+
+    private void tellTheWorldIAmOverwhelmed()
+    {
+        long now = System.currentTimeMillis();
+        if (now - lastErrorMessage > SPAM_PERIOD)
+        {
+            log("Saturated Buckets ! active=" + activeBuckets.size() + ", queued=" + queuedBuckets.size()
+                    + ", recycled=" + recycledBuckets.size());
+            lastErrorMessage = now;
         }
     }
 
@@ -331,7 +348,6 @@ public class IntruderTracker
         {
             SINGLETON.backgroundThread.notify();
         }
-        SINGLETON.processActiveQueues();
         try
         {
             Thread.sleep(100);
@@ -339,6 +355,7 @@ public class IntruderTracker
         catch (InterruptedException e)
         {
         }
+        SINGLETON.processActiveQueues();
         return SINGLETON.intruderCollector.getClassMap();
     }
 

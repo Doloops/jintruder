@@ -49,6 +49,19 @@ public class Potato
         for (long i = 0; i < 2_000_000_000; i++)
         {
             cpuburnA(5);
+            if (false)
+            {
+                if (i % 10_000_000 == 0)
+                {
+                    try
+                    {
+                        Thread.sleep(1);
+                    }
+                    catch (InterruptedException e)
+                    {
+                    }
+                }
+            }
         }
     }
 
