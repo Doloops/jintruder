@@ -113,9 +113,9 @@ public class IntruderTracker
         }
     };
 
-    private volatile long ticker = System.nanoTime() - BIRTH_TIME;
+    private static volatile long ticker = System.nanoTime() - BIRTH_TIME;
 
-    private final Thread tickerThread = new Thread()
+    private static final Thread tickerThread = new Thread()
     {
         @Override
         public void run()
@@ -205,33 +205,17 @@ public class IntruderTracker
         }
     }
 
-    private final void doAddCallMethod(int methodId)
-    {
-        if (queuedBuckets.size() > MAX_QUEUED_BUCKETS)
-        {
-            tellTheWorldIAmOverwhelmed();
-            return;
-        }
-
-        TraceEventBucket bucket = findCurrentBucket();
-        TraceEventBucket.__addEvent(bucket, methodId, ticker);
-        if (bucket.isFull())
-        {
-            pushFullBucket(bucket);
-        }
-    }
-
-    private long lastErrorMessage = 0;
+    private static long lastErrorMessage = 0;
 
     private static final long SPAM_PERIOD = 10_000;
 
-    private void tellTheWorldIAmOverwhelmed()
+    private static void tellTheWorldIAmOverwhelmed()
     {
         long now = System.currentTimeMillis();
         if (now - lastErrorMessage > SPAM_PERIOD)
         {
-            log("Saturated Buckets ! active=" + activeBuckets.size() + ", queued=" + queuedBuckets.size()
-                    + ", recycled=" + recycledBuckets.size());
+            log("Saturated Buckets ! active=" + SINGLETON.activeBuckets.size() + ", queued="
+                    + SINGLETON.queuedBuckets.size() + ", recycled=" + SINGLETON.recycledBuckets.size());
             lastErrorMessage = now;
         }
     }
@@ -339,7 +323,18 @@ public class IntruderTracker
      */
     public static final void startFinishMethod(int methodId)
     {
-        SINGLETON.doAddCallMethod(methodId);
+        if (SINGLETON.queuedBuckets.size() > MAX_QUEUED_BUCKETS)
+        {
+            tellTheWorldIAmOverwhelmed();
+            return;
+        }
+
+        TraceEventBucket bucket = SINGLETON.findCurrentBucket();
+        TraceEventBucket._addEvent(bucket, methodId, ticker);
+        if (TraceEventBucket._isFull(bucket))
+        {
+            SINGLETON.pushFullBucket(bucket);
+        }
     }
 
     public static final ClassMap getClassMap()
@@ -350,7 +345,11 @@ public class IntruderTracker
         }
         try
         {
-            Thread.sleep(100);
+            while (!SINGLETON.queuedBuckets.isEmpty())
+            {
+                log("Waiting for " + SINGLETON.queuedBuckets.size() + " queued buckets !");
+                Thread.sleep(100);
+            }
         }
         catch (InterruptedException e)
         {

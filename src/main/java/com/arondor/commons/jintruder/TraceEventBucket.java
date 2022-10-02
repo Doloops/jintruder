@@ -2,7 +2,7 @@ package com.arondor.commons.jintruder;
 
 public final class TraceEventBucket
 {
-    public static final int BUCKET_SIZE = 16 * 1024;
+    public static final int BUCKET_SIZE = 1024;
 
     private long threadId;
 
@@ -25,7 +25,7 @@ public final class TraceEventBucket
         this.cursor = cursor + 1;
     }
 
-    public static final void __addEvent(final TraceEventBucket bucket, final int methodReference, final long time)
+    public static final void _addEvent(final TraceEventBucket bucket, final int methodReference, final long time)
     {
         int cursor = bucket.cursor;
         bucket.timeArray[cursor] = time;
@@ -41,6 +41,11 @@ public final class TraceEventBucket
     public final boolean isFull()
     {
         return cursor == BUCKET_SIZE;
+    }
+
+    public static final boolean _isFull(final TraceEventBucket bucket)
+    {
+        return bucket.cursor == BUCKET_SIZE;
     }
 
     public final int size()
