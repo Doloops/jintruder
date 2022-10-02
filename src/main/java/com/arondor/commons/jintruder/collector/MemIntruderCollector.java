@@ -14,7 +14,7 @@ public class MemIntruderCollector implements IntruderCollector
 {
     private static final boolean VERBOSE = false;
 
-    private static final boolean DUMP_EVENTS = true;
+    private static final boolean DUMP_EVENTS = false;
 
     private boolean dumpUncleanThreads = false;
 
@@ -120,6 +120,11 @@ public class MemIntruderCollector implements IntruderCollector
                 else
                 {
                     methodCallFinished(time, methodInfo, methodStack);
+
+                    if (methodStack.isEmpty())
+                    {
+                        perThreadStack.remove(bucket.getThreadId());
+                    }
                 }
             }
         }

@@ -1,5 +1,6 @@
 package com.arondor.commons.jintruder;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,33 @@ public class IntruderTracker
                     }
                 }
 
+                /*
+                 * First, we must cleanup all buckets attached to dead threads.
+                 */
+                List<TraceEventBucket> bucketsFromDeadThreads = new ArrayList<TraceEventBucket>();
+                synchronized (this)
+                {
+                    for (Map.Entry<Thread, TraceEventBucket> entry : activeBuckets.entrySet())
+                    {
+                        if (!entry.getKey().isAlive())
+                        {
+                            TraceEventBucket bucket = entry.getValue();
+                            activeBuckets.remove(entry.getKey());
+                            bucketsFromDeadThreads.add(bucket);
+                        }
+                    }
+                }
+
+                if (VERBOSE)
+                {
+                    System.err.println("Buckets active=" + activeBuckets.size() + ", fromDeadThreads="
+                            + bucketsFromDeadThreads.size() + ", queued=" + queuedBuckets.size() + ", recycled="
+                            + recycledBuckets.size());
+                }
+
+                /*
+                 * Then we process all the queued buckets
+                 */
                 while (true)
                 {
                     TraceEventBucket head;
@@ -70,9 +98,17 @@ public class IntruderTracker
                             break;
                         head = queuedBuckets.remove(0);
                     }
-
                     processBucket(head);
                 }
+
+                /*
+                 * And we finish by all the buckets from the dead threads,
+                 * considering the previous buckets from these threads were
+                 * processed from the queued list.
+                 */
+                for (TraceEventBucket bucket : bucketsFromDeadThreads)
+                    processBucket(bucket);
+
                 mayPeriodicDump();
             }
         }
@@ -218,7 +254,7 @@ public class IntruderTracker
         {
             synchronized (this)
             {
-                if (!recycledBuckets.isEmpty())
+                if (bucket == null && !recycledBuckets.isEmpty())
                 {
                     bucket = recycledBuckets.remove(0);
                     bucket.reuse(threadId);
