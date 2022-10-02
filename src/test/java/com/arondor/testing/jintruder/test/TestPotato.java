@@ -72,6 +72,30 @@ public class TestPotato extends AbstractBaseIntruderTest
     }
 
     @Test
+    public void testPotatoTestALot() throws FileNotFoundException, IOException, IllegalClassFormatException,
+            ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException,
+            InvocationTargetException, NoSuchMethodException, SecurityException
+    {
+        String className = "com.acme.Potato";
+
+        executeClassMethod(className, "testALot");
+
+        ClassMap classMap = IntruderTracker.getClassMap();
+        Assert.assertEquals(1, classMap.size());
+
+        ClassInfo classInfo = classMap.get(className.replace('.', '/'));
+        MethodInfo methodInfo = classInfo.getMethodMap().get("testALot");
+
+        Assert.assertTrue(methodInfo.getTotalTime() > 0);
+
+        CallInfo burnA = methodInfo.getSubCall("cpuburnA");
+        Assert.assertEquals(2_000_000_000L, burnA.getNumber());
+        Assert.assertTrue(burnA.getTimeSpent() > 0);
+
+        Assert.assertTrue(methodInfo.getTotalTime() >= burnA.getTimeSpent());
+    }
+
+    @Test
     public void testTomato() throws FileNotFoundException, IOException, IllegalClassFormatException,
             ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException,
             InvocationTargetException, NoSuchMethodException, SecurityException
