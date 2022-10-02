@@ -13,6 +13,8 @@ public class MethodInfo
 
     private long inclusiveTime = 0;
 
+    private long numberOfCalls = 0;
+
     public MethodInfo(int id, ClassInfo className, String methodName)
     {
         this.id = id;
@@ -59,6 +61,11 @@ public class MethodInfo
         return subCalls;
     }
 
+    public CallInfo getSubCall(String methodName)
+    {
+        return getSubCall(parent.getClassName(), methodName);
+    }
+
     public CallInfo getSubCall(String className, String methodName)
     {
         for (Map.Entry<MethodInfo, CallInfo> entry : subCalls.entrySet())
@@ -69,7 +76,7 @@ public class MethodInfo
                 return entry.getValue();
             }
         }
-        return null;
+        throw new IllegalArgumentException("Could not find " + className + "::" + methodName);
     }
 
     public long getTotalTime()
@@ -113,5 +120,20 @@ public class MethodInfo
             return;
         }
         callInfo.appendCalledTime(timeSpent);
+    }
+
+    public long getNumberOfCalls()
+    {
+        return numberOfCalls;
+    }
+
+    public void setNumberOfCalls(long numberOfCalls)
+    {
+        this.numberOfCalls = numberOfCalls;
+    }
+
+    public void incrementNumberOfCalls()
+    {
+        this.numberOfCalls++;
     }
 }

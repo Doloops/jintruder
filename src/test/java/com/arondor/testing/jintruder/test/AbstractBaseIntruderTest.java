@@ -20,21 +20,41 @@ public abstract class AbstractBaseIntruderTest
     {
         private final Map<String, byte[]> extraClassDefs;
 
-        public ByteClassLoader(URL[] urls, ClassLoader parent, Map<String, byte[]> extraClassDefs)
+        public ByteClassLoader(URL[] urls, ClassLoader parent)
         {
             super(urls, parent);
-            this.extraClassDefs = new HashMap<String, byte[]>(extraClassDefs);
+            this.extraClassDefs = new HashMap<String, byte[]>();
         }
 
         @Override
-        protected Class<?> findClass(final String name) throws ClassNotFoundException
+        protected Class<?> findClass(final String className) throws ClassNotFoundException
         {
-            byte[] classBytes = this.extraClassDefs.remove(name);
+            try
+            {
+                rewriteClass(className);
+            }
+            catch (IOException | IllegalClassFormatException e)
+            {
+                throw new ClassNotFoundException("Could not get class " + className, e);
+            }
+            byte[] classBytes = this.extraClassDefs.remove(className);
             if (classBytes != null)
             {
-                return defineClass(name, classBytes, 0, classBytes.length);
+                return defineClass(className, classBytes, 0, classBytes.length);
             }
-            return super.findClass(name);
+            return super.findClass(className);
+        }
+
+        public void rewriteClass(String className)
+                throws FileNotFoundException, IOException, IllegalClassFormatException
+        {
+            String classFile = "target/test-classes/" + className.replace('.', '/') + ".class";
+            byte[] bytes = IOUtils.toByteArray(new FileInputStream(classFile));
+            IntruderTransformer transformer = new IntruderTransformer();
+
+            byte[] transformed = transformer.transform(getClass().getClassLoader(), className, getClass(), null, bytes);
+
+            extraClassDefs.put(className, transformed);
         }
     }
 
@@ -42,27 +62,52 @@ public abstract class AbstractBaseIntruderTest
             IllegalClassFormatException, ClassNotFoundException, InstantiationException, IllegalAccessException,
             IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException
     {
-        byte[] bytes = IOUtils
-                .toByteArray(new FileInputStream("target/test-classes/" + className.replace('.', '/') + ".class"));
-        IntruderTransformer transformer = new IntruderTransformer();
+        String classNames[] = new String[1];
+        classNames[0] = className;
+        executeClassMethod(classNames, methodName);
+    }
 
-        // String className = "com.acme.Potato";
-        byte[] transformed = transformer.transform(getClass().getClassLoader(), className, getClass(), null, bytes);
+    public void executeClassMethod(String classNames[], String methodName) throws FileNotFoundException, IOException,
+            IllegalClassFormatException, ClassNotFoundException, InstantiationException, IllegalAccessException,
+            IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException
+    {
+        forgeClassMethodRunnable(classNames, methodName).run();
+    }
 
+    public Runnable forgeClassMethodRunnable(String classNames[], String methodName)
+            throws FileNotFoundException, IOException, IllegalClassFormatException, ClassNotFoundException,
+            InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException,
+            NoSuchMethodException, SecurityException
+    {
         URL[] urls = new URL[0];
-        Map<String, byte[]> map = new HashMap<>();
-
-        map.put(className, transformed);
-        try (ByteClassLoader byteClassLoader = new ByteClassLoader(urls, getClass().getClassLoader(), map))
+        try (ByteClassLoader byteClassLoader = new ByteClassLoader(urls, getClass().getClassLoader()))
         {
+            Class<?> classes[] = new Class<?>[classNames.length];
+            for (int i = 0; i < classNames.length; i++)
+            {
+                byteClassLoader.rewriteClass(classNames[i]);
+                classes[i] = byteClassLoader.findClass(classNames[i]);
+            }
+            Class<?> clazz = classes[0];
+            Object potato = clazz.getDeclaredConstructor().newInstance();
 
-            Class<?> potatoClass = byteClassLoader.findClass(className);
+            java.lang.reflect.Method method = clazz.getDeclaredMethod(methodName, new Class[] {});
 
-            Object potato = potatoClass.getDeclaredConstructor().newInstance();
-
-            java.lang.reflect.Method method = potatoClass.getDeclaredMethod(methodName, new Class[] {});
-
-            method.invoke(potato);
+            return new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        method.invoke(potato);
+                    }
+                    catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
+                    {
+                        throw new RuntimeException("Caught : " + e.getClass().getName() + " : " + e.getMessage(), e);
+                    }
+                }
+            };
         }
         finally
         {

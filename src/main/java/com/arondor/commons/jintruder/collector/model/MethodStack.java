@@ -60,6 +60,7 @@ public class MethodStack
         else
         {
             methodInfo.appendInclusiveTime(timeSpent);
+            methodInfo.incrementNumberOfCalls();
             if (cursor > 1)
             {
                 MethodInfo parent = methodInfos[cursor - 2];

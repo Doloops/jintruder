@@ -76,14 +76,17 @@ public class TestPotato extends AbstractBaseIntruderTest
             ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException,
             InvocationTargetException, NoSuchMethodException, SecurityException
     {
-        String className = "com.acme.Potato";
+        String potatoClassName = "com.acme.Potato";
+        String tomatoClassName = "com.acme.Tomato";
 
-        executeClassMethod(className, "testTomato1");
+        String classNames[] = { potatoClassName, tomatoClassName };
+
+        executeClassMethod(classNames, "testTomato1");
 
         ClassMap classMap = IntruderTracker.getClassMap();
-        Assert.assertEquals(1, classMap.size());
+        Assert.assertEquals(2, classMap.size());
 
-        ClassInfo classInfo = classMap.get(className.replace('.', '/'));
+        ClassInfo classInfo = classMap.get(potatoClassName.replace('.', '/'));
         MethodInfo methodInfo = classInfo.getMethodMap().get("testTomato1");
 
         Assert.assertTrue(methodInfo.getTotalTime() > 0);
