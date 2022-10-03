@@ -10,9 +10,19 @@ public class MethodStack
 
     private int cursor = 0;
 
+    public MethodStack()
+    {
+
+    }
+
     public final boolean isEmpty()
     {
         return cursor == 0;
+    }
+
+    public final void reset()
+    {
+        cursor = 0;
     }
 
     private final void checkValidCursor()

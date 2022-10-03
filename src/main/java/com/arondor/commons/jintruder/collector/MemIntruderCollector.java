@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.arondor.commons.jintruder.ArrayStack;
 import com.arondor.commons.jintruder.TraceEventBucket;
 import com.arondor.commons.jintruder.collector.model.ClassInfo;
 import com.arondor.commons.jintruder.collector.model.ClassMap;
@@ -18,11 +19,13 @@ public class MemIntruderCollector implements IntruderCollector
 
     private boolean dumpUncleanThreads = false;
 
-    private Map<Long, MethodStack> perThreadStack = new HashMap<Long, MethodStack>();
+    private final Map<Long, MethodStack> perThreadStack = new HashMap<Long, MethodStack>();
 
     private final ClassMap classMap = new ClassMap();
 
-    private Map<Integer, MethodInfo> methodReferenceMap = new ConcurrentHashMap<Integer, MethodInfo>();
+    private final Map<Integer, MethodInfo> methodReferenceMap = new ConcurrentHashMap<Integer, MethodInfo>();
+
+    private final ArrayStack<MethodStack> recycledMethodStacks = new ArrayStack<MethodStack>(128);
 
     public MemIntruderCollector()
     {
@@ -39,7 +42,15 @@ public class MemIntruderCollector implements IntruderCollector
         MethodStack methodStack = perThreadStack.get(threadId);
         if (methodStack == null)
         {
-            methodStack = new MethodStack();
+            if (!recycledMethodStacks.isEmpty())
+            {
+                methodStack = recycledMethodStacks.pop();
+                methodStack.reset();
+            }
+            else
+            {
+                methodStack = new MethodStack();
+            }
             perThreadStack.put(threadId, methodStack);
         }
         return methodStack;
@@ -124,6 +135,7 @@ public class MemIntruderCollector implements IntruderCollector
                     if (methodStack.isEmpty())
                     {
                         perThreadStack.remove(bucket.getThreadId());
+                        recycledMethodStacks.push(methodStack);
                     }
                 }
             }
