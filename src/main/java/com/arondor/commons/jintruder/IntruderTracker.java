@@ -15,6 +15,8 @@ public class IntruderTracker
 {
     private static final boolean VERBOSE = true;
 
+    private static final boolean DROP_FULL_BUCKETS = true;
+
     private static final int MAX_RECYCLED_BUCKETS = 8192;
 
     private static final int MAX_QUEUED_BUCKETS = 1_000_000;
@@ -45,22 +47,6 @@ public class IntruderTracker
     }
 
     private Thread backgroundThread;
-
-    public final void startBackgroundThread()
-    {
-        shutdown = false;
-        backgroundThread = new Thread()
-        {
-            @Override
-            public void run()
-            {
-                runBackgroundThread();
-            }
-        };
-        backgroundThread.setName("IntruderBackgroundThread");
-        backgroundThread.setDaemon(true);
-        backgroundThread.start();
-    }
 
     private static volatile long TICKER = System.nanoTime() - BIRTH_TIME;
 
@@ -118,7 +104,7 @@ public class IntruderTracker
     private void processBucket(TraceEventBucket bucket)
     {
         intruderCollector.processBucket(bucket);
-        synchronized (IntruderTracker.this)
+        synchronized (recycledBuckets)
         {
             if (recycledBuckets.size() < MAX_RECYCLED_BUCKETS)
             {
@@ -151,6 +137,15 @@ public class IntruderTracker
     {
         activeBuckets.remove(Thread.currentThread());
 
+        if (DROP_FULL_BUCKETS)
+        {
+            synchronized (recycledBuckets)
+            {
+                recycledBuckets.add(bucket);
+            }
+            return;
+        }
+
         boolean mayNotify = false;
         synchronized (queuedBuckets)
         {
@@ -180,7 +175,7 @@ public class IntruderTracker
         TraceEventBucket bucket = activeBuckets.get(currentThread);
         if (bucket == null)
         {
-            synchronized (this)
+            synchronized (recycledBuckets)
             {
                 if (bucket == null && !recycledBuckets.isEmpty())
                 {
@@ -292,6 +287,22 @@ public class IntruderTracker
 
             mayPeriodicDump();
         }
+    }
+
+    public final void startBackgroundThread()
+    {
+        shutdown = false;
+        backgroundThread = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                runBackgroundThread();
+            }
+        };
+        backgroundThread.setName("IntruderBackgroundThread");
+        backgroundThread.setDaemon(true);
+        backgroundThread.start();
     }
 
     private void stopBackgroundThread()
