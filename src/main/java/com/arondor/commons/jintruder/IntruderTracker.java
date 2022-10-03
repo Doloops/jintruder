@@ -252,6 +252,8 @@ public class IntruderTracker
         }
     }
 
+    private long lastNotified = 0;
+
     private void pushFullBucket(TraceEventBucket bucket)
     {
         activeBuckets.remove(Thread.currentThread());
@@ -260,11 +262,12 @@ public class IntruderTracker
         synchronized (queuedBuckets)
         {
             queuedBuckets.add(bucket);
-            if (queuedBuckets.size() == MIN_QUEUED_BUCKETS_FOR_NOTIFY)
+            if (queuedBuckets.size() >= MIN_QUEUED_BUCKETS_FOR_NOTIFY && (lastNotified - TICKER) > 50_000L)
             {
                 log("Queued buckets reached minium for notify queued=" + queuedBuckets.size() + ", recyled="
                         + recycledBuckets.size() + ", active=" + activeBuckets.size());
                 mayNotify = true;
+                lastNotified = TICKER;
             }
         }
 
