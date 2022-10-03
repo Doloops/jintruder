@@ -15,7 +15,7 @@ public class IntruderTracker
 {
     private static final boolean VERBOSE = true;
 
-    private static final boolean DROP_FULL_BUCKETS = true;
+    private static final boolean DROP_FULL_BUCKETS = false;
 
     private static final int MAX_RECYCLED_BUCKETS = 8192;
 
