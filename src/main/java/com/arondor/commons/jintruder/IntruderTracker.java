@@ -44,85 +44,34 @@ public class IntruderTracker
     {
     }
 
-    private final Thread backgroundThread = new Thread()
+    private Thread backgroundThread;
+
+    public final void startBackgroundThread()
     {
-        @Override
-        public void run()
+        shutdown = false;
+        backgroundThread = new Thread()
         {
-            while (!shutdown)
+            @Override
+            public void run()
             {
-                synchronized (backgroundThread)
-                {
-                    try
-                    {
-                        backgroundThread.wait(100);
-                    }
-                    catch (InterruptedException e)
-                    {
-                    }
-                }
-
-                /*
-                 * First, we must cleanup all buckets attached to dead threads.
-                 */
-                List<TraceEventBucket> bucketsFromDeadThreads = new ArrayList<TraceEventBucket>();
-                synchronized (this)
-                {
-                    for (Map.Entry<Thread, TraceEventBucket> entry : activeBuckets.entrySet())
-                    {
-                        if (!entry.getKey().isAlive())
-                        {
-                            TraceEventBucket bucket = entry.getValue();
-                            activeBuckets.remove(entry.getKey());
-                            bucketsFromDeadThreads.add(bucket);
-                        }
-                    }
-                }
-
-                if (VERBOSE)
-                {
-                    log("Buckets active=" + activeBuckets.size() + ", fromDeadThreads=" + bucketsFromDeadThreads.size()
-                            + ", queued=" + queuedBuckets.size() + ", recycled=" + recycledBuckets.size());
-                }
-
-                /*
-                 * Then we process all the queued buckets
-                 */
-                while (true)
-                {
-                    TraceEventBucket head;
-                    synchronized (queuedBuckets)
-                    {
-                        if (queuedBuckets.isEmpty())
-                            break;
-                        head = queuedBuckets.remove(0);
-                    }
-                    processBucket(head);
-                }
-
-                /*
-                 * And we finish by all the buckets from the dead threads,
-                 * considering the previous buckets from these threads were
-                 * processed from the queued list.
-                 */
-                for (TraceEventBucket bucket : bucketsFromDeadThreads)
-                    processBucket(bucket);
-
-                mayPeriodicDump();
+                runBackgroundThread();
             }
-        }
-    };
+        };
+        backgroundThread.setName("IntruderBackgroundThread");
+        backgroundThread.setDaemon(true);
+        backgroundThread.start();
+    }
 
-    private static volatile long ticker = System.nanoTime() - BIRTH_TIME;
+    private static volatile long TICKER = System.nanoTime() - BIRTH_TIME;
 
-    private static final Thread tickerThread = new Thread()
+    private static final Thread TICKER_THREAD = new Thread()
     {
         @Override
         public void run()
         {
             while (true)
             {
-                ticker = System.nanoTime() - BIRTH_TIME;
+                TICKER = System.nanoTime() - BIRTH_TIME;
                 try
                 {
                     Thread.sleep(0, 100);
@@ -143,44 +92,22 @@ public class IntruderTracker
             log("Periodic Dump Interval set to " + intruderPeriodicDumpInterval + "ms");
         }
 
-        tickerThread.setName("IntruderTicker");
-        tickerThread.setDaemon(true);
-        tickerThread.start();
-
-        backgroundThread.setName("IntruderBackgroundThread");
-        backgroundThread.setDaemon(true);
+        TICKER_THREAD.setName("IntruderTicker");
+        TICKER_THREAD.setDaemon(true);
+        TICKER_THREAD.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread()
         {
             @Override
             public void run()
             {
-                log("Shutting down backgroundThread ...");
-                shutdown = true;
-                boolean processActiveQueues = true;
-                try
-                {
-                    Thread.sleep(10);
-                    backgroundThread.join(10_000);
-                }
-                catch (InterruptedException e)
-                {
-                    log("Could not wait backgroundThread: " + e.getMessage());
-                    processActiveQueues = false;
-                }
-                if (processActiveQueues)
-                {
-                    processActiveQueues();
-                }
-                else
-                {
-                    log("Will not process active queues due to previous errors.");
-                }
+                stopBackgroundThread();
 
                 intruderSink.dumpAll(intruderCollector.getClassMap());
             }
         });
-        backgroundThread.start();
+
+        startBackgroundThread();
     }
 
     private synchronized int doDeclareMethod(String className, String methodName)
@@ -302,10 +229,108 @@ public class IntruderTracker
         activeBuckets.clear();
     }
 
+    private void runBackgroundThread()
+    {
+        while (!shutdown)
+        {
+            synchronized (backgroundThread)
+            {
+                try
+                {
+                    backgroundThread.wait(100);
+                }
+                catch (InterruptedException e)
+                {
+                }
+            }
+
+            /*
+             * First, we must cleanup all buckets attached to dead threads.
+             */
+            List<TraceEventBucket> bucketsFromDeadThreads = new ArrayList<TraceEventBucket>();
+            synchronized (this)
+            {
+                for (Map.Entry<Thread, TraceEventBucket> entry : activeBuckets.entrySet())
+                {
+                    if (!entry.getKey().isAlive())
+                    {
+                        TraceEventBucket bucket = entry.getValue();
+                        activeBuckets.remove(entry.getKey());
+                        bucketsFromDeadThreads.add(bucket);
+                    }
+                }
+            }
+
+            if (VERBOSE)
+            {
+                log("Buckets active=" + activeBuckets.size() + ", fromDeadThreads=" + bucketsFromDeadThreads.size()
+                        + ", queued=" + queuedBuckets.size() + ", recycled=" + recycledBuckets.size());
+            }
+
+            /*
+             * Then we process all the queued buckets
+             */
+            while (true)
+            {
+                TraceEventBucket head;
+                synchronized (queuedBuckets)
+                {
+                    if (queuedBuckets.isEmpty())
+                        break;
+                    head = queuedBuckets.remove(0);
+                }
+                processBucket(head);
+            }
+
+            /*
+             * And we finish by all the buckets from the dead threads,
+             * considering the previous buckets from these threads were
+             * processed from the queued list.
+             */
+            for (TraceEventBucket bucket : bucketsFromDeadThreads)
+                processBucket(bucket);
+
+            mayPeriodicDump();
+        }
+    }
+
+    private void stopBackgroundThread()
+    {
+        log("Shutting down backgroundThread ...");
+        shutdown = true;
+        boolean processActiveQueues = true;
+        try
+        {
+            Thread.sleep(10);
+            backgroundThread.join(10_000);
+        }
+        catch (InterruptedException e)
+        {
+            log("Could not wait backgroundThread: " + e.getMessage());
+            processActiveQueues = false;
+        }
+        if (processActiveQueues)
+        {
+            processActiveQueues();
+        }
+        else
+        {
+            log("Will not process active queues due to previous errors.");
+        }
+    }
+
     /**
      * Singleton and static call part
      */
     private static final IntruderTracker SINGLETON = new IntruderTracker();
+
+    public final ClassMap doGetClassMap()
+    {
+        stopBackgroundThread();
+        ClassMap classMap = intruderCollector.getClassMap();
+        startBackgroundThread();
+        return classMap;
+    }
 
     /*
      * Public API
@@ -330,7 +355,7 @@ public class IntruderTracker
         }
 
         TraceEventBucket bucket = SINGLETON.findCurrentBucket();
-        TraceEventBucket._addEvent(bucket, methodId, ticker);
+        TraceEventBucket._addEvent(bucket, methodId, TICKER);
         if (TraceEventBucket._isFull(bucket))
         {
             SINGLETON.pushFullBucket(bucket);
@@ -339,23 +364,7 @@ public class IntruderTracker
 
     public static final ClassMap getClassMap()
     {
-        synchronized (SINGLETON.backgroundThread)
-        {
-            SINGLETON.backgroundThread.notify();
-        }
-        try
-        {
-            while (!SINGLETON.queuedBuckets.isEmpty())
-            {
-                log("Waiting for " + SINGLETON.queuedBuckets.size() + " queued buckets !");
-                Thread.sleep(100);
-            }
-        }
-        catch (InterruptedException e)
-        {
-        }
-        SINGLETON.processActiveQueues();
-        return SINGLETON.intruderCollector.getClassMap();
+        return SINGLETON.doGetClassMap();
     }
 
     public static void reset()

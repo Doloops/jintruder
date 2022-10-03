@@ -26,11 +26,11 @@ public class TestMultiThreadPotato extends AbstractBaseIntruderTest
 
         Runnable runnable = forgeClassMethodRunnable(classNames, "testSimple");
 
-        int nbThreads = 100_000;
+        int nbThreads = 10_000;
 
         CountDownLatch latch = new CountDownLatch(nbThreads);
 
-        Semaphore sem = new Semaphore(4);
+        Semaphore sem = new Semaphore(6);
 
         for (int th = 0; th < nbThreads; th++)
         {
