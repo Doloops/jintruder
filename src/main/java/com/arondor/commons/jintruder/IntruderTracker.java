@@ -13,9 +13,11 @@ import com.arondor.commons.jintruder.sink.IntruderSink;
 
 public class IntruderTracker
 {
-    private static final boolean VERBOSE = false;
+    private static final boolean VERBOSE = true;
 
-    private static final int MAX_RECYCLED_BUCKETS = 8192;
+    private static final int MAX_RECYCLED_BUCKETS = 256;
+
+    private static final int MIN_QUEUED_BUCKETS_FOR_NOTIFY = 64;
 
     private static final int MAX_QUEUED_BUCKETS = 1_000_000;
 
@@ -43,23 +45,23 @@ public class IntruderTracker
 
     private static void error(String message)
     {
-        System.err.println(message);
+        System.err.println("[JINTRUDER ERROR] " + message);
     }
 
     private static void debug(String string)
     {
     }
 
-    private static volatile long ticker = System.nanoTime() - BIRTH_TIME;
+    private static volatile long TICKER = System.nanoTime() - BIRTH_TIME;
 
-    private static final Thread tickerThread = new Thread()
+    private static final Thread TICKER_THREAD = new Thread()
     {
         @Override
         public void run()
         {
             while (true)
             {
-                ticker = System.nanoTime() - BIRTH_TIME;
+                TICKER = System.nanoTime() - BIRTH_TIME;
                 try
                 {
                     Thread.sleep(0, 100);
@@ -92,6 +94,7 @@ public class IntruderTracker
 
     private void stopBackgroundThread()
     {
+        long startTime = System.currentTimeMillis();
         log("Shutting down backgroundThread ...");
         shutdown = true;
         boolean processActiveQueues = true;
@@ -113,6 +116,7 @@ public class IntruderTracker
         {
             log("Will not process active queues due to previous errors.");
         }
+        log("Background thread stopped ! Took=" + (System.currentTimeMillis() - startTime) + "ms.");
     }
 
     private void runBackgroundBucketProcessing()
@@ -187,9 +191,9 @@ public class IntruderTracker
             log("Periodic Dump Interval set to " + intruderPeriodicDumpInterval + "ms");
         }
 
-        tickerThread.setName("IntruderTicker");
-        tickerThread.setDaemon(true);
-        tickerThread.start();
+        TICKER_THREAD.setName("IntruderTicker");
+        TICKER_THREAD.setDaemon(true);
+        TICKER_THREAD.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread()
         {
@@ -237,13 +241,14 @@ public class IntruderTracker
             error("Saturated Buckets ! active=" + SINGLETON.activeBuckets.size() + ", queued="
                     + SINGLETON.queuedBuckets.size() + ", recycled=" + SINGLETON.recycledBuckets.size());
             lastErrorMessage = now;
-        }
-        try
-        {
-            Thread.sleep(100);
-        }
-        catch (InterruptedException e)
-        {
+
+            try
+            {
+                Thread.sleep(100);
+            }
+            catch (InterruptedException e)
+            {
+            }
         }
     }
 
@@ -255,10 +260,10 @@ public class IntruderTracker
         synchronized (queuedBuckets)
         {
             queuedBuckets.add(bucket);
-            if (queuedBuckets.size() == MAX_QUEUED_BUCKETS)
+            if (queuedBuckets.size() == MIN_QUEUED_BUCKETS_FOR_NOTIFY)
             {
-                error("Queued buckets reached maximum " + MAX_QUEUED_BUCKETS + ", recyled=" + recycledBuckets.size()
-                        + ", active=" + activeBuckets.size());
+                log("Queued buckets reached minium for notify queued=" + queuedBuckets.size() + ", recyled="
+                        + recycledBuckets.size() + ", active=" + activeBuckets.size());
                 mayNotify = true;
             }
         }
@@ -367,7 +372,7 @@ public class IntruderTracker
         }
 
         TraceEventBucket bucket = SINGLETON.findCurrentBucket();
-        TraceEventBucket._addEvent(bucket, methodId, ticker);
+        TraceEventBucket._addEvent(bucket, methodId, TICKER);
         if (TraceEventBucket._isFull(bucket))
         {
             SINGLETON.pushFullBucket(bucket);
