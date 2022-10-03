@@ -31,7 +31,7 @@ public class IntruderTracker
 
     private final Map<Thread, TraceEventBucket> activeBuckets = new java.util.concurrent.ConcurrentHashMap<Thread, TraceEventBucket>();
 
-    private final List<TraceEventBucket> recycledBuckets = new LinkedList<TraceEventBucket>();
+    private final ArrayStack<TraceEventBucket> recycledBuckets = new ArrayStack<TraceEventBucket>(MAX_QUEUED_BUCKETS);
 
     private boolean shutdown = false;
 
@@ -257,7 +257,7 @@ public class IntruderTracker
             {
                 if (bucket == null && !recycledBuckets.isEmpty())
                 {
-                    bucket = recycledBuckets.remove(0);
+                    bucket = recycledBuckets.pop();
                     bucket.reuse(threadId);
                 }
             }
