@@ -51,7 +51,7 @@ public class CacheGrindSink implements IntruderSink
         printStream.println("events: ticks");
         printStream.println("");
 
-        for (ClassInfo className : classMap.values())
+        for (ClassInfo className : classMap.classInfos())
         {
             if (className.getTotalTime() > 0)
             {

@@ -32,6 +32,11 @@ public class MethodInfo
         return methodName;
     }
 
+    public String getClassAndMethodName()
+    {
+        return parent.getClassName() + ":" + methodName;
+    }
+
     public int getReferenceId()
     {
         return id;
@@ -135,5 +140,30 @@ public class MethodInfo
     public void incrementNumberOfCalls()
     {
         this.numberOfCalls++;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return parent.getClassName().hashCode() + methodName.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (o instanceof MethodInfo)
+        {
+            MethodInfo other = (MethodInfo) o;
+            /*
+             * We use lasy evaluation to compare objects first, which are
+             * cheaper to perform than long equals()
+             */
+            if (parent != other.parent && !parent.getClassName().equals(other.parent.getClassName()))
+                return false;
+            if (methodName != other.methodName && !methodName.equals(other.methodName))
+                return false;
+            return true;
+        }
+        return false;
     }
 }

@@ -35,7 +35,7 @@ public class TestPotato extends AbstractBaseIntruderTest
         ClassMap classMap = JintruderTracker.getClassMap();
         Assert.assertEquals(1, classMap.size());
 
-        ClassInfo classInfo = classMap.get(className.replace('.', '/'));
+        ClassInfo classInfo = classMap.getClassInfo(className.replace('.', '/'));
         MethodInfo methodInfo = classInfo.getMethodMap().get("testDouble");
 
         CallInfo burnA = methodInfo.getSubCall("cpuburnA");
@@ -59,7 +59,7 @@ public class TestPotato extends AbstractBaseIntruderTest
         ClassMap classMap = JintruderTracker.getClassMap();
         Assert.assertEquals(1, classMap.size());
 
-        ClassInfo classInfo = classMap.get(className.replace('.', '/'));
+        ClassInfo classInfo = classMap.getClassInfo(className.replace('.', '/'));
         MethodInfo methodInfo = classInfo.getMethodMap().get("testWithException");
 
         Assert.assertTrue(methodInfo.getTotalTime() > 0);
@@ -83,7 +83,7 @@ public class TestPotato extends AbstractBaseIntruderTest
         ClassMap classMap = JintruderTracker.getClassMap();
         Assert.assertEquals(1, classMap.size());
 
-        ClassInfo classInfo = classMap.get(className.replace('.', '/'));
+        ClassInfo classInfo = classMap.getClassInfo(className.replace('.', '/'));
         MethodInfo methodInfo = classInfo.getMethodMap().get("testALot");
 
         Assert.assertTrue(methodInfo.getTotalTime() > 0);
@@ -110,7 +110,7 @@ public class TestPotato extends AbstractBaseIntruderTest
         ClassMap classMap = JintruderTracker.getClassMap();
         Assert.assertEquals(2, classMap.size());
 
-        ClassInfo classInfo = classMap.get(potatoClassName.replace('.', '/'));
+        ClassInfo classInfo = classMap.getClassInfo(potatoClassName.replace('.', '/'));
         MethodInfo methodInfo = classInfo.getMethodMap().get("testTomato1");
 
         Assert.assertTrue(methodInfo.getTotalTime() > 0);

@@ -69,7 +69,7 @@ public class TestMultiThreadPotato extends AbstractBaseIntruderTest
 
         ClassMap classMap = JintruderTracker.getClassMap();
 
-        ClassInfo classInfo = classMap.get(classNames[0].replace('.', '/'));
+        ClassInfo classInfo = classMap.getClassInfo(classNames[0].replace('.', '/'));
         Assert.assertNotNull(classInfo);
 
         MethodInfo methodInfo = classInfo.getMethodMap().get("testSimple");

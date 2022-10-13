@@ -6,6 +6,11 @@ public class CallInfo
 
     private long timeSpent = 0;
 
+    public CallInfo()
+    {
+
+    }
+
     public long getNumber()
     {
         return number;

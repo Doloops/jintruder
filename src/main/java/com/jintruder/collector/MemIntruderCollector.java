@@ -50,7 +50,7 @@ public class MemIntruderCollector implements IntruderCollector
     @Override
     public final int registerMethodReference(String className, String methodName)
     {
-        ClassInfo classInfo = findClassInfo(className);
+        ClassInfo classInfo = classMap.findClass(className);
         MethodInfo methodCall = classInfo.findMethod(methodName);
         if (methodCall == null)
         {
@@ -72,17 +72,6 @@ public class MemIntruderCollector implements IntruderCollector
     {
         MethodInfo info = methodReferenceMap.get(methodReference);
         return info.getClassInfo().getClassName() + "::" + info.getMethodName();
-    }
-
-    private ClassInfo findClassInfo(String className)
-    {
-        ClassInfo clazz = classMap.get(className);
-        if (clazz == null)
-        {
-            clazz = new ClassInfo(className);
-            classMap.put(className, clazz);
-        }
-        return clazz;
     }
 
     @Override
