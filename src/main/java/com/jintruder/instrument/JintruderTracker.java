@@ -7,10 +7,9 @@ import java.util.Map;
 
 import com.jintruder.collector.IntruderCollector;
 import com.jintruder.collector.MemIntruderCollector;
+import com.jintruder.model.ClassMap;
 import com.jintruder.sink.CacheGrindSink;
 import com.jintruder.sink.IntruderSink;
-
-import comjintruder.model.ClassMap;
 
 public class JintruderTracker
 {

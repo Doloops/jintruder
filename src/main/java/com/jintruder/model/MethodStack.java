@@ -1,4 +1,4 @@
-package comjintruder.model;
+package com.jintruder.model;
 
 public class MethodStack
 {

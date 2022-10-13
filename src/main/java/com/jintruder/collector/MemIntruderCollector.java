@@ -5,11 +5,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.jintruder.instrument.TraceEventBucket;
-
-import comjintruder.model.ClassInfo;
-import comjintruder.model.ClassMap;
-import comjintruder.model.MethodInfo;
-import comjintruder.model.MethodStack;
+import com.jintruder.model.ClassInfo;
+import com.jintruder.model.ClassMap;
+import com.jintruder.model.MethodInfo;
+import com.jintruder.model.MethodStack;
 
 public class MemIntruderCollector implements IntruderCollector
 {
@@ -51,12 +50,13 @@ public class MemIntruderCollector implements IntruderCollector
     @Override
     public final int registerMethodReference(String className, String methodName)
     {
-        MethodInfo methodCall = findClassName(className).findMethod(methodName);
+        ClassInfo classInfo = findClassInfo(className);
+        MethodInfo methodCall = classInfo.findMethod(methodName);
         if (methodCall == null)
         {
             nextMethodReference++;
             int referenceId = nextMethodReference;
-            methodCall = findClassName(className).addMethod(referenceId, methodName);
+            methodCall = classInfo.addMethod(referenceId, methodName);
             methodReferenceMap.put(referenceId, methodCall);
         }
         if (VERBOSE)
@@ -74,7 +74,7 @@ public class MemIntruderCollector implements IntruderCollector
         return info.getClassInfo().getClassName() + "::" + info.getMethodName();
     }
 
-    private ClassInfo findClassName(String className)
+    private ClassInfo findClassInfo(String className)
     {
         ClassInfo clazz = classMap.get(className);
         if (clazz == null)

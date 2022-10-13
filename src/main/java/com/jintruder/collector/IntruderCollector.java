@@ -1,8 +1,7 @@
 package com.jintruder.collector;
 
 import com.jintruder.instrument.TraceEventBucket;
-
-import comjintruder.model.ClassMap;
+import com.jintruder.model.ClassMap;
 
 public interface IntruderCollector
 {

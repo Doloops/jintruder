@@ -10,11 +10,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.jintruder.instrument.JintruderTracker;
-
-import comjintruder.model.CallInfo;
-import comjintruder.model.ClassInfo;
-import comjintruder.model.ClassMap;
-import comjintruder.model.MethodInfo;
+import com.jintruder.model.CallInfo;
+import com.jintruder.model.ClassInfo;
+import com.jintruder.model.ClassMap;
+import com.jintruder.model.MethodInfo;
 
 public class TestPotato extends AbstractBaseIntruderTest
 {

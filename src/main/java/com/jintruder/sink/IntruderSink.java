@@ -1,6 +1,6 @@
 package com.jintruder.sink;
 
-import comjintruder.model.ClassMap;
+import com.jintruder.model.ClassMap;
 
 public interface IntruderSink
 {

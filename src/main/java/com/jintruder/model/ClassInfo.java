@@ -1,4 +1,4 @@
-package comjintruder.model;
+package com.jintruder.model;
 
 import java.util.Collection;
 import java.util.HashMap;

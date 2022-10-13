@@ -11,10 +11,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jintruder.instrument.JintruderTracker;
-
-import comjintruder.model.ClassInfo;
-import comjintruder.model.ClassMap;
-import comjintruder.model.MethodInfo;
+import com.jintruder.model.ClassInfo;
+import com.jintruder.model.ClassMap;
+import com.jintruder.model.MethodInfo;
 
 public class TestMultiThreadPotato extends AbstractBaseIntruderTest
 {
