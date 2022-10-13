@@ -1,4 +1,4 @@
-package com.arondor.commons.jintruder;
+package com.jintruder.instrument;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -10,7 +10,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-public class IntruderMethodDump
+public class JintruderMethodDump
 {
     public void log(String message)
     {

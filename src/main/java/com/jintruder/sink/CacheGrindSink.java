@@ -1,13 +1,13 @@
-package com.arondor.commons.jintruder.sink;
+package com.jintruder.sink;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Map;
 
-import com.arondor.commons.jintruder.collector.model.CallInfo;
-import com.arondor.commons.jintruder.collector.model.ClassInfo;
-import com.arondor.commons.jintruder.collector.model.ClassMap;
-import com.arondor.commons.jintruder.collector.model.MethodInfo;
+import comjintruder.model.CallInfo;
+import comjintruder.model.ClassInfo;
+import comjintruder.model.ClassMap;
+import comjintruder.model.MethodInfo;
 
 public class CacheGrindSink implements IntruderSink
 {

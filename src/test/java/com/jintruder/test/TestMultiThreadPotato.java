@@ -1,4 +1,4 @@
-package com.arondor.testing.jintruder.test;
+package com.jintruder.test;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -10,10 +10,11 @@ import java.util.concurrent.Semaphore;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.arondor.commons.jintruder.IntruderTracker;
-import com.arondor.commons.jintruder.collector.model.ClassInfo;
-import com.arondor.commons.jintruder.collector.model.ClassMap;
-import com.arondor.commons.jintruder.collector.model.MethodInfo;
+import com.jintruder.instrument.JintruderTracker;
+
+import comjintruder.model.ClassInfo;
+import comjintruder.model.ClassMap;
+import comjintruder.model.MethodInfo;
 
 public class TestMultiThreadPotato extends AbstractBaseIntruderTest
 {
@@ -67,7 +68,7 @@ public class TestMultiThreadPotato extends AbstractBaseIntruderTest
 
         latch.await();
 
-        ClassMap classMap = IntruderTracker.getClassMap();
+        ClassMap classMap = JintruderTracker.getClassMap();
 
         ClassInfo classInfo = classMap.get(classNames[0].replace('.', '/'));
         Assert.assertNotNull(classInfo);

@@ -1,17 +1,18 @@
-package com.arondor.commons.jintruder;
+package com.jintruder.instrument;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import com.arondor.commons.jintruder.collector.IntruderCollector;
-import com.arondor.commons.jintruder.collector.MemIntruderCollector;
-import com.arondor.commons.jintruder.collector.model.ClassMap;
-import com.arondor.commons.jintruder.sink.CacheGrindSink;
-import com.arondor.commons.jintruder.sink.IntruderSink;
+import com.jintruder.collector.IntruderCollector;
+import com.jintruder.collector.MemIntruderCollector;
+import com.jintruder.sink.CacheGrindSink;
+import com.jintruder.sink.IntruderSink;
 
-public class IntruderTracker
+import comjintruder.model.ClassMap;
+
+public class JintruderTracker
 {
     private static final boolean VERBOSE = true;
 
@@ -69,7 +70,7 @@ public class IntruderTracker
         }
     };
 
-    public IntruderTracker()
+    public JintruderTracker()
     {
         String sInterval = System.getProperty("jintruder.dumpInterval");
         if (sInterval != null)
@@ -333,7 +334,7 @@ public class IntruderTracker
     /**
      * Singleton and static call part
      */
-    private static final IntruderTracker SINGLETON = new IntruderTracker();
+    private static final JintruderTracker SINGLETON = new JintruderTracker();
 
     public final ClassMap doGetClassMap()
     {

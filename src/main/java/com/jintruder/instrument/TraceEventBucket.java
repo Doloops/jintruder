@@ -1,4 +1,4 @@
-package com.arondor.commons.jintruder;
+package com.jintruder.instrument;
 
 public final class TraceEventBucket
 {

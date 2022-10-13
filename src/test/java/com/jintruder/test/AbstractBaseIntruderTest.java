@@ -1,4 +1,4 @@
-package com.arondor.testing.jintruder.test;
+package com.jintruder.test;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -12,7 +12,7 @@ import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 
-import com.arondor.commons.jintruder.IntruderTransformer;
+import com.jintruder.instrument.JintruderTransformer;
 
 public abstract class AbstractBaseIntruderTest
 {
@@ -50,7 +50,7 @@ public abstract class AbstractBaseIntruderTest
         {
             String classFile = "target/test-classes/" + className.replace('.', '/') + ".class";
             byte[] bytes = IOUtils.toByteArray(new FileInputStream(classFile));
-            IntruderTransformer transformer = new IntruderTransformer();
+            JintruderTransformer transformer = new JintruderTransformer();
 
             byte[] transformed = transformer.transform(getClass().getClassLoader(), className, getClass(), null, bytes);
 

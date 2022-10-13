@@ -1,4 +1,4 @@
-package com.arondor.commons.jintruder.collector.model;
+package comjintruder.model;
 
 public class CallInfo
 {

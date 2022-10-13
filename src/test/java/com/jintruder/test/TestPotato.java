@@ -1,4 +1,4 @@
-package com.arondor.testing.jintruder.test;
+package com.jintruder.test;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -9,18 +9,19 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.arondor.commons.jintruder.IntruderTracker;
-import com.arondor.commons.jintruder.collector.model.CallInfo;
-import com.arondor.commons.jintruder.collector.model.ClassInfo;
-import com.arondor.commons.jintruder.collector.model.ClassMap;
-import com.arondor.commons.jintruder.collector.model.MethodInfo;
+import com.jintruder.instrument.JintruderTracker;
+
+import comjintruder.model.CallInfo;
+import comjintruder.model.ClassInfo;
+import comjintruder.model.ClassMap;
+import comjintruder.model.MethodInfo;
 
 public class TestPotato extends AbstractBaseIntruderTest
 {
     @Before
     public void init()
     {
-        IntruderTracker.reset();
+        JintruderTracker.reset();
     }
 
     @Test
@@ -32,7 +33,7 @@ public class TestPotato extends AbstractBaseIntruderTest
 
         executeClassMethod(className, "testDouble");
 
-        ClassMap classMap = IntruderTracker.getClassMap();
+        ClassMap classMap = JintruderTracker.getClassMap();
         Assert.assertEquals(1, classMap.size());
 
         ClassInfo classInfo = classMap.get(className.replace('.', '/'));
@@ -56,7 +57,7 @@ public class TestPotato extends AbstractBaseIntruderTest
 
         executeClassMethod(className, "testWithException");
 
-        ClassMap classMap = IntruderTracker.getClassMap();
+        ClassMap classMap = JintruderTracker.getClassMap();
         Assert.assertEquals(1, classMap.size());
 
         ClassInfo classInfo = classMap.get(className.replace('.', '/'));
@@ -80,7 +81,7 @@ public class TestPotato extends AbstractBaseIntruderTest
 
         executeClassMethod(className, "testALot");
 
-        ClassMap classMap = IntruderTracker.getClassMap();
+        ClassMap classMap = JintruderTracker.getClassMap();
         Assert.assertEquals(1, classMap.size());
 
         ClassInfo classInfo = classMap.get(className.replace('.', '/'));
@@ -107,7 +108,7 @@ public class TestPotato extends AbstractBaseIntruderTest
 
         executeClassMethod(classNames, "testTomato1");
 
-        ClassMap classMap = IntruderTracker.getClassMap();
+        ClassMap classMap = JintruderTracker.getClassMap();
         Assert.assertEquals(2, classMap.size());
 
         ClassInfo classInfo = classMap.get(potatoClassName.replace('.', '/'));

@@ -1,4 +1,4 @@
-package com.arondor.testing.jintruder.test;
+package com.jintruder.test;
 
 public class TestSimple
 {

@@ -1,14 +1,15 @@
-package com.arondor.commons.jintruder.collector;
+package com.jintruder.collector;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.arondor.commons.jintruder.TraceEventBucket;
-import com.arondor.commons.jintruder.collector.model.ClassInfo;
-import com.arondor.commons.jintruder.collector.model.ClassMap;
-import com.arondor.commons.jintruder.collector.model.MethodInfo;
-import com.arondor.commons.jintruder.collector.model.MethodStack;
+import com.jintruder.instrument.TraceEventBucket;
+
+import comjintruder.model.ClassInfo;
+import comjintruder.model.ClassMap;
+import comjintruder.model.MethodInfo;
+import comjintruder.model.MethodStack;
 
 public class MemIntruderCollector implements IntruderCollector
 {

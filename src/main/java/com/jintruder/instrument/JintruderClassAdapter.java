@@ -1,4 +1,4 @@
-package com.arondor.commons.jintruder;
+package com.jintruder.instrument;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,15 +8,15 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-public class IntruderClassAdapter extends ClassVisitor
+public class JintruderClassAdapter extends ClassVisitor
 {
-    private static final String INTRUDER_TRACKER_CLASS = IntruderTracker.class.getName().replace('.', '/');
+    private static final String INTRUDER_TRACKER_CLASS = JintruderTracker.class.getName().replace('.', '/');
 
     private List<String> tracedMethodBlacklist = new ArrayList<String>();
 
-    public IntruderClassAdapter(ClassVisitor cv)
+    public JintruderClassAdapter(ClassVisitor cv)
     {
-        super(Opcodes.ASM4, cv);
+        super(Opcodes.ASM9, cv);
 
         tracedMethodBlacklist.add("<clinit>");
         tracedMethodBlacklist.add("<init>");
@@ -67,7 +67,7 @@ public class IntruderClassAdapter extends ClassVisitor
         public AddDecorationMethodVisitor(MethodVisitor mv, String methodName, String signature)
         {
             super(Opcodes.ASM8, mv);
-            this.methodId = IntruderTracker.declareMethod(className, methodName);
+            this.methodId = JintruderTracker.declareMethod(className, methodName);
 
             if (isLog())
             {

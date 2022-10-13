@@ -1,7 +1,8 @@
-package com.arondor.commons.jintruder.collector;
+package com.jintruder.collector;
 
-import com.arondor.commons.jintruder.TraceEventBucket;
-import com.arondor.commons.jintruder.collector.model.ClassMap;
+import com.jintruder.instrument.TraceEventBucket;
+
+import comjintruder.model.ClassMap;
 
 public interface IntruderCollector
 {

@@ -1,4 +1,4 @@
-package com.arondor.commons.jintruder;
+package com.jintruder.instrument;
 
 import java.io.FileOutputStream;
 import java.lang.instrument.ClassFileTransformer;
@@ -14,11 +14,11 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 
-public class IntruderTransformer implements ClassFileTransformer
+public class JintruderTransformer implements ClassFileTransformer
 {
     public static void premain(String agentArgs, Instrumentation inst)
     {
-        inst.addTransformer(new IntruderTransformer());
+        inst.addTransformer(new JintruderTransformer());
     }
 
     private List<String> tracedClassPrefixes = new ArrayList<String>();
@@ -53,7 +53,7 @@ public class IntruderTransformer implements ClassFileTransformer
         System.err.println(message);
     }
 
-    public IntruderTransformer()
+    public JintruderTransformer()
     {
         JINTRUDER_NO_DECORATION = getBooleanProperty("jintruder.nodecoration");
         JINTRUDER_LOG = getBooleanProperty("jintruder.log");
@@ -133,7 +133,7 @@ public class IntruderTransformer implements ClassFileTransformer
             try
             {
                 ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-                ClassVisitor ca = new IntruderClassAdapter(cw);
+                ClassVisitor ca = new JintruderClassAdapter(cw);
                 ClassReader cr = new ClassReader(classfileBuffer);
 
                 if (isLog())
@@ -154,6 +154,10 @@ public class IntruderTransformer implements ClassFileTransformer
                     fos.close();
                 }
                 return retVal;
+            }
+            catch (TypeNotPresentException e)
+            {
+                log("Caught exception : " + e);
             }
             catch (RuntimeException e)
             {
