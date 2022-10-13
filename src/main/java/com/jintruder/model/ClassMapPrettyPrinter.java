@@ -1,7 +1,9 @@
 package com.jintruder.model;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class ClassMapPrettyPrinter
 {
@@ -9,15 +11,19 @@ public class ClassMapPrettyPrinter
     {
         public static class Cycle
         {
-
+            Set<CallInfo> calls = new HashSet<CallInfo>();
         }
 
-        public boolean isKnown(MethodInfo methodInfo)
+        public boolean checkCycles(MethodInfo methodInfo, CallInfo callInfo)
         {
-            boolean has = get(methodInfo) != null;
-            if (!has)
+            Cycle cycle = get(methodInfo);
+            if (cycle == null)
             {
                 put(methodInfo, new Cycle());
+            }
+            else if (!cycle.calls.contains(callInfo))
+            {
+                cycle.calls.add(callInfo);
             }
             else
             {
@@ -29,8 +35,9 @@ public class ClassMapPrettyPrinter
                         System.err.println("* with " + entry.getKey().getClassAndMethodName());
                     }
                 }
+                return true;
             }
-            return has;
+            return false;
         }
     }
 
@@ -64,8 +71,14 @@ public class ClassMapPrettyPrinter
                 builder.append("*  ");
             }
             MethodInfo childMethodInfo = call.getKey();
+            CallInfo childCallInfo = call.getValue();
+
             builder.append(childMethodInfo.getClassAndMethodName());
-            if (cycleDetector.isKnown(childMethodInfo))
+            builder.append(':');
+            builder.append(childCallInfo.getLineNumber());
+            builder.append(' ');
+            builder.append(childCallInfo.getNumber());
+            if (cycleDetector.checkCycles(childMethodInfo, childCallInfo))
             {
                 builder.append(" => Cycle\n");
                 return;

@@ -33,6 +33,12 @@ public class ClassInfo
         return methodCall;
     }
 
+    public void addMethod(MethodInfo methodInfo)
+    {
+        if (!methodCalls.containsKey(methodInfo.getMethodName()))
+            methodCalls.put(methodInfo.getMethodName(), methodInfo);
+    }
+
     public Map<String, MethodInfo> getMethodMap()
     {
         return methodCalls;

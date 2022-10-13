@@ -80,7 +80,7 @@ public class CacheGrindSink implements IntruderSink
             printStream.println("calls=" + entry.getValue().getNumber() + " " + "0");
 
             long timeSpent = entry.getValue().getTimeSpent();
-            if (timeSpent < 0)
+            if (timeSpent <= 0)
             {
                 System.err.println("Spurious ! timeSpent=" + timeSpent + " in call : " + methodCall + "=>" + subCall);
                 timeSpent = 1;

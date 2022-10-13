@@ -46,19 +46,44 @@ public class MethodInfo
 
     public void addSubCall(MethodInfo subCall)
     {
+        addSubCall(subCall, 0, 0);
+    }
+
+    public CallInfo addSubCall(MethodInfo subCall, int lineNumber, int depth)
+    {
         CallInfo callInfo = subCalls.get(subCall);
-        if (callInfo == null)
+        if (callInfo == null || callInfo.getLineNumber() != lineNumber)
         {
             callInfo = new CallInfo();
+            callInfo.setLineNumber(lineNumber);
+            callInfo.setDepth(depth);
             subCalls.put(subCall, callInfo);
         }
         callInfo.addCalled();
+        return callInfo;
     }
 
-    @Override
-    public String toString()
+    public MethodInfo addSubCall(ClassInfo classInfo, String methodName, int lineNumber, int depth)
     {
-        return parent.getClassName() + ":" + getMethodName();
+        for (Map.Entry<MethodInfo, CallInfo> entry : subCalls.entrySet())
+        {
+            MethodInfo methodInfo = entry.getKey();
+            if (methodInfo.getClassInfo() != classInfo)
+                continue;
+            if (!methodInfo.getMethodName().equals(methodName))
+                continue;
+            CallInfo callInfo = entry.getValue();
+            if (callInfo.getLineNumber() != lineNumber)
+                continue;
+            if (callInfo.getDepth() != depth)
+                continue;
+            callInfo.addCalled();
+            return methodInfo;
+        }
+        MethodInfo childMethodInfo = new MethodInfo(0, classInfo, methodName);
+        CallInfo callInfo = addSubCall(childMethodInfo, lineNumber, depth);
+        callInfo.appendCalledTime(1);
+        return childMethodInfo;
     }
 
     public Map<MethodInfo, CallInfo> getSubCalls()
@@ -143,27 +168,20 @@ public class MethodInfo
     }
 
     @Override
-    public int hashCode()
+    public String toString()
     {
-        return parent.getClassName().hashCode() + methodName.hashCode();
+        return parent.getClassName() + ":" + getMethodName();
     }
 
-    @Override
-    public boolean equals(Object o)
-    {
-        if (o instanceof MethodInfo)
-        {
-            MethodInfo other = (MethodInfo) o;
-            /*
-             * We use lasy evaluation to compare objects first, which are
-             * cheaper to perform than long equals()
-             */
-            if (parent != other.parent && !parent.getClassName().equals(other.parent.getClassName()))
-                return false;
-            if (methodName != other.methodName && !methodName.equals(other.methodName))
-                return false;
-            return true;
-        }
-        return false;
-    }
+    /*
+     * @Override public int hashCode() { return parent.getClassName().hashCode()
+     * + methodName.hashCode(); }
+     * 
+     * @Override public boolean equals(Object o) { if (o instanceof MethodInfo)
+     * { MethodInfo other = (MethodInfo) o; if (parent != other.parent &&
+     * !parent.getClassName().equals(other.parent.getClassName())) return false;
+     * if (methodName != other.methodName &&
+     * !methodName.equals(other.methodName)) return false; return true; } return
+     * false; }
+     */
 }
