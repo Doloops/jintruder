@@ -124,6 +124,13 @@ public class TestThreadSamplerToCallStack
         {
             private void a()
             {
+                try
+                {
+                    Thread.sleep(50);
+                }
+                catch (InterruptedException e)
+                {
+                }
                 b();
             }
 
@@ -131,6 +138,13 @@ public class TestThreadSamplerToCallStack
             {
                 for (int i = 0; i < 20; i++)
                 {
+                    try
+                    {
+                        Thread.sleep(2);
+                    }
+                    catch (InterruptedException e)
+                    {
+                    }
                     c();
                     d();
                 }
@@ -174,5 +188,7 @@ public class TestThreadSamplerToCallStack
         newThread.join();
 
         log("Stack: \n{0}", CallStackPrettyPrinter.prettyPrintByEntryPoint(callStack));
+
+        new CallStackToCallGrind().dumpAll(callStack);
     }
 }

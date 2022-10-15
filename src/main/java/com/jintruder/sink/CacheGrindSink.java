@@ -11,7 +11,6 @@ import com.jintruder.model.MethodInfo;
 
 public class CacheGrindSink implements IntruderSink
 {
-
     private final String protectMethodName(MethodInfo methodInfo)
     {
         String methodName = methodInfo.getMethodName();

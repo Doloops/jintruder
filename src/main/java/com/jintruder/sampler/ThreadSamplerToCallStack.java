@@ -20,9 +20,9 @@ public class ThreadSamplerToCallStack
     public void mergeStackTrace(StackTraceElement[] stackTrace, CallStack callStack)
     {
         CallStackLevel current = null;
-        for (int index = stackTrace.length - 1; index > 0; index--)
+        for (int index = stackTrace.length - 1; index >= 0; index--)
         {
-            int depth = stackTrace.length - index - 1;
+            int depth = stackTrace.length - index;
             StackTraceElement element = stackTrace[index];
             String className = element.getClassName();
             String methodName = element.getMethodName();

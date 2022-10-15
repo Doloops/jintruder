@@ -112,6 +112,11 @@ public class CallStack
             CallStackLevel stack = new CallStackLevel(className, methodName, depth);
             return children.get(stack);
         }
+
+        public long getSelfCount()
+        {
+            return count - children.values().stream().mapToLong(CallStackLevel::getCount).sum();
+        }
     }
 
     private final SelfMap<CallStackLevel> entryPoints = new SelfMap<CallStackLevel>();

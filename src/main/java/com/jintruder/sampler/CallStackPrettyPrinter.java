@@ -9,6 +9,8 @@ public class CallStackPrettyPrinter
         for (CallStack.CallStackLevel entryPoint : classMap.getEntryPoints())
         {
             builder.append(entryPoint.getClassAndMethodName());
+            builder.append(' ');
+            builder.append(entryPoint.getCount());
             builder.append('\n');
 
             prettyPrintCallStackLevel(builder, entryPoint);
