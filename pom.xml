@@ -63,7 +63,7 @@
 								<transformer
 									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 									<manifestEntries>
-										<Premain-Class>com.jintruder.JintruderTransformer</Premain-Class>
+										<Premain-Class>com.jintruder.JintruderPremain</Premain-Class>
 									</manifestEntries>
 								</transformer>
 							</transformers>

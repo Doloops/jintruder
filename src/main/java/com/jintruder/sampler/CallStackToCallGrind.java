@@ -2,11 +2,27 @@ package com.jintruder.sampler;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.text.MessageFormat;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import com.jintruder.sampler.CallStack.CallStackLevel;
 
 public class CallStackToCallGrind
 {
+    private static final long EPOCH = System.currentTimeMillis();
+
+    private static final String DUMP_FILE_PATH = "callgrind.out." + EPOCH;
+
+    private static void log(String pattern, Object... vars)
+    {
+        System.err.println(MessageFormat.format(pattern, vars));
+    }
+
+    private static void debug(String pattern, Object... vars)
+    {
+    }
+
     private final String protectMethodName(CallStackLevel level)
     {
         String methodName = level.getMethodName();
@@ -20,21 +36,30 @@ public class CallStackToCallGrind
         return className.replace('/', '.').replace('$', '_');
     }
 
+    public void dumpPeriodically(ScheduledExecutorService scheduler, CallStack callStack, int intervalMs)
+    {
+        log("Dumping callstack to {0} each {1}ms", DUMP_FILE_PATH, intervalMs);
+        scheduler.scheduleAtFixedRate(() -> {
+            synchronized (callStack)
+            {
+                dumpAll(callStack);
+            }
+        }, 0, intervalMs, TimeUnit.MILLISECONDS);
+    }
+
     public void dumpAll(CallStack callStack)
     {
-        long epoch = System.currentTimeMillis();
-        String dumpFile = "callgrind.out." + epoch;
-        System.err.println("[JINTRUDER] : Dumping events to : " + dumpFile);
+        debug("[JINTRUDER] : Dumping events to : {0}", DUMP_FILE_PATH);
         try
         {
-            dump(dumpFile, callStack);
+            dump(DUMP_FILE_PATH, callStack);
         }
         catch (IOException e)
         {
-            System.err.println("[JINTRUDER] : Could not dump to file " + dumpFile + " : " + e.getMessage());
+            log("[JINTRUDER] : Could not dump to file {0} because {1} ({2})", DUMP_FILE_PATH, e.getClass().getName(),
+                    e.getMessage());
             e.printStackTrace(System.err);
         }
-
     }
 
     private void dump(String fileName, CallStack callStack) throws IOException
@@ -77,4 +102,5 @@ public class CallStackToCallGrind
             dump(printStream, child);
         }
     }
+
 }

@@ -182,7 +182,7 @@ public class TestThreadSamplerToCallStack
         CallStack callStack = new CallStack();
         ThreadSamplerToCallStack sampler = new ThreadSamplerToCallStack();
 
-        sampler.watch(newThread, callStack, 1);
+        sampler.watchSingleThread(newThread, callStack, 1);
 
         newThread.start();
         newThread.join();

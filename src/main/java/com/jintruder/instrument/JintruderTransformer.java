@@ -3,7 +3,6 @@ package com.jintruder.instrument;
 import java.io.FileOutputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
-import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,38 +13,19 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 
+import com.jintruder.JintruderConfig;
+
 public class JintruderTransformer implements ClassFileTransformer
 {
-    public static void premain(String agentArgs, Instrumentation inst)
-    {
-        inst.addTransformer(new JintruderTransformer());
-    }
-
     private List<String> tracedClassPrefixes = new ArrayList<String>();
 
     private List<String> tracedClassBlacklist = new ArrayList<String>();
 
     private List<String> tracedClassRegexBlacklist = new ArrayList<String>();
 
-    public static boolean JINTRUDER_NO_DECORATION = false;
-
-    public static boolean JINTRUDER_LOG = false;
-
-    public static boolean JINTRUDER_DUMP_BYTECODE = false;
-
-    private boolean getBooleanProperty(String name)
-    {
-        String sValue = System.getProperty(name);
-        if (sValue != null)
-        {
-            return sValue.trim().equalsIgnoreCase("true");
-        }
-        return false;
-    }
-
     private final boolean isLog()
     {
-        return JINTRUDER_LOG;
+        return JintruderConfig.isVerbose();
     }
 
     private final void log(String message)
@@ -55,10 +35,7 @@ public class JintruderTransformer implements ClassFileTransformer
 
     public JintruderTransformer()
     {
-        JINTRUDER_NO_DECORATION = getBooleanProperty("jintruder.nodecoration");
-        JINTRUDER_LOG = getBooleanProperty("jintruder.log");
-        JINTRUDER_DUMP_BYTECODE = getBooleanProperty("jintruder.dump.bytecode");
-        String intruderClasses = System.getProperty("jintruder.classes");
+        String intruderClasses = JintruderConfig.getClassesWildcard();
         if (intruderClasses == null || intruderClasses.trim().isEmpty())
         {
             intruderClasses = "com:org";
@@ -84,7 +61,7 @@ public class JintruderTransformer implements ClassFileTransformer
 
     private final boolean isClassTraced(final String className)
     {
-        if (JINTRUDER_NO_DECORATION)
+        if (!JintruderConfig.isEnableDecoration())
         {
             return false;
         }
@@ -147,7 +124,7 @@ public class JintruderTransformer implements ClassFileTransformer
                 cr.accept(ca, 0);
                 byte[] retVal = cw.toByteArray();
 
-                if (JINTRUDER_DUMP_BYTECODE)
+                if (JintruderConfig.isDumpBytecode())
                 {
                     FileOutputStream fos = new FileOutputStream("/tmp/" + className.replace('/', '_') + ".class");
                     fos.write(retVal);

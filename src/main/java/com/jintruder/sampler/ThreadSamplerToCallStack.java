@@ -2,6 +2,7 @@ package com.jintruder.sampler;
 
 import java.lang.Thread.State;
 import java.text.MessageFormat;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +43,7 @@ public class ThreadSamplerToCallStack
         }
     }
 
-    public void watch(Thread newThread, CallStack callStack, long intervalMs)
+    public void watchSingleThread(Thread newThread, CallStack callStack, long intervalMs)
     {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.scheduleAtFixedRate(new Runnable()
@@ -82,6 +83,21 @@ public class ThreadSamplerToCallStack
                 threadLast = start;
                 totalTook += System.nanoTime() - start;
             }
+        }, 0, intervalMs, TimeUnit.MILLISECONDS);
+    }
+
+    public void watchMultipleThreads(ScheduledExecutorService scheduler, String pattern, long intervalMs,
+            CallStack callStack)
+    {
+        scheduler.scheduleAtFixedRate(() -> {
+            synchronized (callStack)
+            {
+                for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet())
+                {
+                    mergeStackTrace(entry.getValue(), callStack);
+                }
+            }
+
         }, 0, intervalMs, TimeUnit.MILLISECONDS);
     }
 
