@@ -6,7 +6,7 @@ import com.jintruder.model.ClassInfo;
 import com.jintruder.model.ClassMap;
 import com.jintruder.model.MethodInfo;
 
-public class ThreadSampler
+public class ThreadSamplerToModel
 {
     private static final boolean VERBOSE = false;
 

@@ -9,7 +9,7 @@ import com.jintruder.model.ClassMap;
 import com.jintruder.model.ClassMapPrettyPrinter;
 import com.jintruder.sink.CacheGrindSink;
 
-public class TestThreadSampler
+public class TestThreadSamplerToModel
 {
     private static void log(String pattern, Object... vars)
     {
@@ -53,7 +53,7 @@ public class TestThreadSampler
 
         ClassMap classMap = new ClassMap();
 
-        ThreadSampler sampler = new ThreadSampler();
+        ThreadSamplerToModel sampler = new ThreadSamplerToModel();
 
         sampler.mergeStackTrace(stackTrace, classMap);
 
@@ -108,7 +108,7 @@ public class TestThreadSampler
         };
 
         ClassMap classMap = new ClassMap();
-        ThreadSampler sampler = new ThreadSampler();
+        ThreadSamplerToModel sampler = new ThreadSamplerToModel();
 
         sampler.watch(newThread, classMap, 10);
 
@@ -167,7 +167,7 @@ public class TestThreadSampler
         };
 
         ClassMap classMap = new ClassMap();
-        ThreadSampler sampler = new ThreadSampler();
+        ThreadSamplerToModel sampler = new ThreadSamplerToModel();
 
         sampler.watch(newThread, classMap, 1);
 
