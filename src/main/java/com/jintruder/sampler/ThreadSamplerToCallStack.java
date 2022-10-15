@@ -1,7 +1,10 @@
 package com.jintruder.sampler;
 
+import java.lang.Thread.State;
 import java.text.MessageFormat;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import com.jintruder.sampler.CallStack.CallStackLevel;
 
@@ -41,58 +44,45 @@ public class ThreadSamplerToCallStack
 
     public void watch(Thread newThread, CallStack callStack, long intervalMs)
     {
-        final long intervalNano = intervalMs * 1_000_000;
-        final AtomicLong totalTook = new AtomicLong();
-        Thread watchThread = new Thread()
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.scheduleAtFixedRate(new Runnable()
         {
+            private long threadStart = 0;
+
+            private long threadLast = 0;
+
+            private long samples = 0;
+
+            private long totalTook = 0;
+
             @Override
             public void run()
             {
-                long threadStart = 0;
-                long threadLast = 0;
-                long samples = 0;
-                while (true)
+                long start = System.nanoTime();
+                if (newThread.getState() == State.NEW)
                 {
-                    long start = System.nanoTime();
-                    if (newThread.getState() == State.NEW)
-                    {
-                    }
-                    else if (newThread.getState() == State.TERMINATED)
-                    {
-                        long threadLife = threadLast - threadStart;
-                        log("Watched thread for {0}ns, took {1} samples, total time to capture {2}ns, average {3}ns per sample",
-                                threadLife, samples, totalTook.get(), totalTook.get() / samples);
-                        return;
-                    }
-                    else
-                    {
-                        mergeStackTrace(newThread.getStackTrace(), callStack);
-                        samples++;
-                    }
-                    if (threadStart == 0)
-                    {
-                        threadStart = start;
-                    }
-                    threadLast = start;
-                    long took = System.nanoTime() - start;
-                    totalTook.addAndGet(took);
-                    try
-                    {
-                        long remaining = (intervalNano - took) / 100L;
-                        if (remaining <= 100L)
-                            continue;
-                        log("remaining {0}ns", remaining);
-                        long remainingMs = remaining / 1_000_000L;
-                        long remainingNs = remaining % 1_000_000L;
-                        Thread.sleep(remainingMs, (int) remainingNs);
-                    }
-                    catch (InterruptedException e)
-                    {
-                    }
                 }
+                else if (newThread.getState() == State.TERMINATED)
+                {
+                    long threadLife = threadLast - threadStart;
+                    log("Watched thread for {0}ns, took {1} samples, total time to capture {2}ns, average {3}ns per sample",
+                            threadLife, samples, totalTook, totalTook / samples);
+                    scheduler.shutdown();
+                    return;
+                }
+                else
+                {
+                    mergeStackTrace(newThread.getStackTrace(), callStack);
+                    samples++;
+                }
+                if (threadStart == 0)
+                {
+                    threadStart = start;
+                }
+                threadLast = start;
+                totalTook += System.nanoTime() - start;
             }
-        };
-        watchThread.setName("Watching-" + newThread.getName());
-        watchThread.start();
+        }, 0, intervalMs, TimeUnit.MILLISECONDS);
     }
+
 }
