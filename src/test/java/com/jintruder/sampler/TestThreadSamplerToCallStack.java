@@ -189,6 +189,7 @@ public class TestThreadSamplerToCallStack
 
         log("Stack: \n{0}", CallStackPrettyPrinter.prettyPrintByEntryPoint(callStack));
 
-        new CallStackToCallGrind().dumpAll(callStack);
+        // new CallStackToCallGrind().dumpAll(callStack);
+        new CallStackToJson().dumpAll(callStack);
     }
 }
