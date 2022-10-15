@@ -44,12 +44,12 @@
 				series: [
 						{
 						  name: 'call stack',
-						  type: 'sunburst',
+						  type: 'treemap',
 						  visibleMin: 1,
 						  radius: ['10%', '100%'],
 						  label: {
-							show: false,
-							formatter: '{b}',
+							show: true,
+							formatter: '{b} - {c}',
 							rotate: 'tangential'
 						  },
 						  itemStyle: {
