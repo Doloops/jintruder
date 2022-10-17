@@ -58,11 +58,16 @@ public class JintruderConfig
 
     public static int getDumpInterval()
     {
-        return getIntegerProperty("jintruder.dumpInterval", 10_000);
+        return getIntegerProperty("jintruder.dumpInterval", 0);
     }
 
     public static int getSamplingInterval()
     {
         return getIntegerProperty("jintruder.samplingInterval", 10);
+    }
+
+    public static String getSamplingThreadPattern()
+    {
+        return System.getProperty("jintruder.threadsToWatch");
     }
 }

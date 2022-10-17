@@ -2,10 +2,10 @@ package org.jintruder.sampler;
 
 import java.lang.Thread.State;
 import java.text.MessageFormat;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import org.jintruder.sampler.CallStack.CallStackLevel;
 
@@ -86,15 +86,31 @@ public class ThreadSamplerToCallStack
         }, 0, intervalMs, TimeUnit.MILLISECONDS);
     }
 
-    public void watchMultipleThreads(ScheduledExecutorService scheduler, String pattern, long intervalMs,
+    private static final int INITIAL_THREADS_ARRAY_SIZE = 256;
+
+    private Thread allThreads[] = new Thread[INITIAL_THREADS_ARRAY_SIZE];
+
+    public void watchMultipleThreads(ScheduledExecutorService scheduler, String patternString, long intervalMs,
             CallStack callStack)
     {
+        final Pattern pattern = patternString != null ? Pattern.compile(patternString) : null;
         scheduler.scheduleAtFixedRate(() -> {
             synchronized (callStack)
             {
-                for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet())
+                int totalThreads = Thread.enumerate(allThreads);
+                if (totalThreads == allThreads.length)
                 {
-                    mergeStackTrace(entry.getValue(), callStack);
+                    allThreads = new Thread[allThreads.length * 2];
+                    Thread.enumerate(allThreads);
+                }
+                for (Thread thread : allThreads)
+                {
+                    if (thread.getName().startsWith("jintruder"))
+                        continue;
+                    if (pattern != null && !pattern.matcher(thread.getName()).matches())
+                        continue;
+                    StackTraceElement[] stack = thread.getStackTrace();
+                    mergeStackTrace(stack, callStack);
                 }
             }
 
