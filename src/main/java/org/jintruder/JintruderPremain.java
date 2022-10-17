@@ -24,7 +24,7 @@ public class JintruderPremain
         }
     }
 
-    private static void startSampling()
+    public static void startSampling()
     {
         ThreadSamplerToCallStack sampler = new ThreadSamplerToCallStack();
         CallStackToJson dumper = new CallStackToJson();
