@@ -21,4 +21,14 @@ public class TestRegex
         }
         Assert.fail("Should have matched !");
     }
+
+    @Test
+    public void testThreadNames()
+    {
+        String threadRegex = "SourceWorker-.*|TaskWorker-.*";
+
+        Pattern pattern = Pattern.compile(threadRegex);
+        Assert.assertTrue(pattern.matcher("SourceWorker-Default#0").matches());
+        Assert.assertTrue(pattern.matcher("TaskWorker-Default#0").matches());
+    }
 }
