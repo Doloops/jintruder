@@ -6,7 +6,7 @@ import java.text.MessageFormat;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.jintruder.sampler.CallStack.CallStackLevel;
+import org.jintruder.sampler.CallStack.CallStackItem;
 
 public class CallStackToJson
 {
@@ -56,7 +56,7 @@ public class CallStackToJson
         printStream.println("{\"name\":\"echarts\",\"value\":\"0\", \"children\": [");
 
         boolean first = true;
-        for (CallStackLevel level : callStack.getEntryPoints())
+        for (CallStackItem level : callStack.getEntryPoints())
         {
             if (first)
                 first = false;
@@ -69,7 +69,7 @@ public class CallStackToJson
         printStream.close();
     }
 
-    private void dump(PrintStream printStream, CallStackLevel level)
+    private void dump(PrintStream printStream, CallStackItem level)
     {
         printStream.print("{\"name\":\"");
         printStream.print(level.getLocation());
@@ -78,7 +78,7 @@ public class CallStackToJson
         printStream.println(", \"children\":[");
 
         boolean first = true;
-        for (CallStackLevel child : level.getChildren())
+        for (CallStackItem child : level.getChildren())
         {
             if (first)
                 first = false;

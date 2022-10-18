@@ -6,7 +6,7 @@ import java.text.MessageFormat;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.jintruder.sampler.CallStack.CallStackLevel;
+import org.jintruder.sampler.CallStack.CallStackItem;
 
 public class CallStackToCallGrind
 {
@@ -23,7 +23,7 @@ public class CallStackToCallGrind
     {
     }
 
-    private final String protectLocation(CallStackLevel level)
+    private final String protectLocation(CallStackItem level)
     {
         String location = level.getLocation();
         String result = location.replace('<', '_').replace('>', '_').replace('/', '.').replace('$', '_');
@@ -64,19 +64,19 @@ public class CallStackToCallGrind
         printStream.println("events: ticks");
         printStream.println("");
 
-        for (CallStackLevel level : callStack.getEntryPoints())
+        for (CallStackItem level : callStack.getEntryPoints())
         {
             dump(printStream, level);
         }
         printStream.close();
     }
 
-    private void dump(PrintStream printStream, CallStackLevel level)
+    private void dump(PrintStream printStream, CallStackItem level)
     {
         printStream.println("fl=" + "Java Class"); // protectClassName(level)
         printStream.println("fn=" + protectLocation(level));
         printStream.println("0 " + level.getSelfCount());
-        for (CallStackLevel child : level.getChildren())
+        for (CallStackItem child : level.getChildren())
         {
             printStream.println("cfl=" + "Java Class"); // protectClassName(child)
             printStream.println("cfn=" + protectLocation(child));
@@ -91,7 +91,7 @@ public class CallStackToCallGrind
             }
             printStream.println("0 " + timeSpent);
         }
-        for (CallStackLevel child : level.getChildren())
+        for (CallStackItem child : level.getChildren())
         {
             dump(printStream, child);
         }

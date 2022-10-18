@@ -6,15 +6,15 @@ import java.util.Map;
 
 public class CallStack
 {
-    public static class CallStackLevel
+    public static class CallStackItem
     {
         private final String location;
 
         private long count;
 
-        private final Map<String, CallStackLevel> children = new HashMap<String, CallStackLevel>();
+        private final Map<String, CallStackItem> children = new HashMap<String, CallStackItem>();
 
-        public CallStackLevel(String location)
+        public CallStackItem(String location)
         {
             this.location = location;
         }
@@ -29,7 +29,7 @@ public class CallStack
             count++;
         }
 
-        public Collection<CallStackLevel> getChildren()
+        public Collection<CallStackItem> getChildren()
         {
             return children.values();
         }
@@ -48,20 +48,20 @@ public class CallStack
         @Override
         public boolean equals(Object o)
         {
-            if (!(o instanceof CallStackLevel))
+            if (!(o instanceof CallStackItem))
             {
                 return false;
             }
-            CallStackLevel other = (CallStackLevel) o;
+            CallStackItem other = (CallStackItem) o;
             return location.equals(other.location);
         }
 
-        public CallStackLevel addChild(String location)
+        public CallStackItem addChild(String location)
         {
-            CallStackLevel stack = children.get(location);
+            CallStackItem stack = children.get(location);
             if (stack == null)
             {
-                stack = new CallStackLevel(location);
+                stack = new CallStackItem(location);
                 children.put(location, stack);
             }
             return stack;
@@ -69,23 +69,28 @@ public class CallStack
 
         public long getSelfCount()
         {
-            return count - children.values().stream().mapToLong(CallStackLevel::getCount).sum();
+            return count - children.values().stream().mapToLong(CallStackItem::getCount).sum();
+        }
+
+        public void setCount(long count)
+        {
+            this.count = count;
         }
     }
 
-    private final Map<String, CallStackLevel> entryPoints = new HashMap<String, CallStackLevel>();
+    private final Map<String, CallStackItem> entryPoints = new HashMap<String, CallStackItem>();
 
-    public Collection<CallStackLevel> getEntryPoints()
+    public Collection<CallStackItem> getEntryPoints()
     {
         return entryPoints.values();
     }
 
-    public CallStackLevel addEntryPoint(String location)
+    public CallStackItem addEntryPoint(String location)
     {
-        CallStackLevel stack = entryPoints.get(location);
+        CallStackItem stack = entryPoints.get(location);
         if (stack == null)
         {
-            stack = new CallStackLevel(location);
+            stack = new CallStackItem(location);
             entryPoints.put(location, stack);
         }
         return stack;

@@ -7,7 +7,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import org.jintruder.sampler.CallStack.CallStackLevel;
+import org.jintruder.sampler.CallStack.CallStackItem;
 
 public class ThreadSamplerToCallStack
 {
@@ -20,7 +20,7 @@ public class ThreadSamplerToCallStack
 
     public void mergeStackTrace(StackTraceElement[] stackTrace, CallStack callStack)
     {
-        CallStackLevel current = null;
+        CallStackItem current = null;
         for (int index = stackTrace.length - 1; index >= 0; index--)
         {
             int depth = stackTrace.length - index;

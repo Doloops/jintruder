@@ -6,7 +6,7 @@ public class CallStackPrettyPrinter
     {
         StringBuilder builder = new StringBuilder();
 
-        for (CallStack.CallStackLevel entryPoint : classMap.getEntryPoints())
+        for (CallStack.CallStackItem entryPoint : classMap.getEntryPoints())
         {
             builder.append(entryPoint.getLocation());
             builder.append(' ');
@@ -18,9 +18,9 @@ public class CallStackPrettyPrinter
         return builder.toString();
     }
 
-    private static void prettyPrintCallStackLevel(StringBuilder builder, CallStack.CallStackLevel level, int depth)
+    private static void prettyPrintCallStackLevel(StringBuilder builder, CallStack.CallStackItem level, int depth)
     {
-        for (CallStack.CallStackLevel child : level.getChildren())
+        for (CallStack.CallStackItem child : level.getChildren())
         {
             for (int d = 0; d < depth; d++)
             {
