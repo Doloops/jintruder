@@ -94,7 +94,7 @@ public class ThreadSamplerToCallStack
     {
         final Pattern pattern = patternString != null ? Pattern.compile(patternString) : null;
         scheduler.scheduleAtFixedRate(() -> {
-            synchronized (callStack)
+            try
             {
                 int totalThreads = Thread.enumerate(allThreads);
                 if (totalThreads == allThreads.length)
@@ -104,15 +104,31 @@ public class ThreadSamplerToCallStack
                 }
                 for (Thread thread : allThreads)
                 {
+                    if (thread == null || thread.getName() == null)
+                        continue;
                     if (thread.getName().startsWith("jintruder"))
                         continue;
                     if (pattern != null && !pattern.matcher(thread.getName()).matches())
                         continue;
                     StackTraceElement[] stack = thread.getStackTrace();
-                    mergeStackTrace(stack, callStack);
+                    if (VERBOSE)
+                        log("Taken stack of {0} elements for thread {1}", stack.length, thread.getName());
+                    synchronized (callStack)
+                    {
+                        mergeStackTrace(stack, callStack);
+                    }
                 }
             }
-
+            catch (RuntimeException | Error e)
+            {
+                log("Caught exception " + e.getClass().getName());
+                e.printStackTrace();
+            }
+            catch (Throwable e)
+            {
+                log("Caught exception " + e.getClass().getName());
+                e.printStackTrace();
+            }
         }, 0, intervalMs, TimeUnit.MILLISECONDS);
     }
 
