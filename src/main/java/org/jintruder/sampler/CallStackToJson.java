@@ -23,19 +23,6 @@ public class CallStackToJson
     {
     }
 
-    private final String protectMethodName(CallStackLevel level)
-    {
-        String methodName = level.getMethodName();
-        String result = methodName.replace('<', '_').replace('>', '_');
-        return result;
-    }
-
-    private final String protectClassName(CallStackLevel level)
-    {
-        String className = level.getClassName();
-        return className.replace('/', '.').replace('$', '_');
-    }
-
     public void dumpPeriodically(ScheduledExecutorService scheduler, CallStack callStack, int intervalMs)
     {
         log("Dumping callstack to {0} each {1}ms", DUMP_FILE_PATH, intervalMs);
@@ -85,7 +72,7 @@ public class CallStackToJson
     private void dump(PrintStream printStream, CallStackLevel level)
     {
         printStream.print("{\"name\":\"");
-        printStream.print(level.getClassAndMethodName());
+        printStream.print(level.getLocation());
         printStream.print("\", \"value\":");
         printStream.print(level.getCount());
         printStream.println(", \"children\":[");

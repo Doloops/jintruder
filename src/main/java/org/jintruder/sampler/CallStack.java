@@ -6,63 +6,17 @@ import java.util.Map;
 
 public class CallStack
 {
-    public static class SelfMap<T>
-    {
-        private final Map<T, T> map = new HashMap<T, T>();
-
-        public T get(T key)
-        {
-            T value = map.get(key);
-            if (value == null)
-            {
-                map.put(key, key);
-                return key;
-            }
-            else
-            {
-                return value;
-            }
-        }
-
-        public void set(T key)
-        {
-            map.put(key, key);
-        }
-
-        public Collection<T> values()
-        {
-            return map.values();
-        }
-
-    }
-
     public static class CallStackLevel
     {
-        private final String className;
-
-        private final String methodName;
-
-        private final int depth;
+        private final String location;
 
         private long count;
 
-        private final SelfMap<CallStackLevel> children = new SelfMap<CallStackLevel>();
+        private final Map<String, CallStackLevel> children = new HashMap<String, CallStackLevel>();
 
-        public CallStackLevel(String className, String methodName, int depth)
+        public CallStackLevel(String location)
         {
-            this.className = className;
-            this.methodName = methodName;
-            this.depth = depth;
-        }
-
-        public String getClassName()
-        {
-            return className;
-        }
-
-        public String getMethodName()
-        {
-            return methodName;
+            this.location = location;
         }
 
         public long getCount()
@@ -80,20 +34,15 @@ public class CallStack
             return children.values();
         }
 
-        public int getDepth()
+        public String getLocation()
         {
-            return depth;
-        }
-
-        public String getClassAndMethodName()
-        {
-            return className + "." + methodName;
+            return location;
         }
 
         @Override
         public int hashCode()
         {
-            return className.hashCode() + methodName.hashCode();
+            return location.hashCode();
         }
 
         @Override
@@ -104,13 +53,18 @@ public class CallStack
                 return false;
             }
             CallStackLevel other = (CallStackLevel) o;
-            return className.equals(other.className) && methodName.equals(other.methodName);
+            return location.equals(other.location);
         }
 
-        public CallStackLevel addChild(String className, String methodName, int depth)
+        public CallStackLevel addChild(String location)
         {
-            CallStackLevel stack = new CallStackLevel(className, methodName, depth);
-            return children.get(stack);
+            CallStackLevel stack = children.get(location);
+            if (stack == null)
+            {
+                stack = new CallStackLevel(location);
+                children.put(location, stack);
+            }
+            return stack;
         }
 
         public long getSelfCount()
@@ -119,17 +73,22 @@ public class CallStack
         }
     }
 
-    private final SelfMap<CallStackLevel> entryPoints = new SelfMap<CallStackLevel>();
+    private final Map<String, CallStackLevel> entryPoints = new HashMap<String, CallStackLevel>();
 
     public Collection<CallStackLevel> getEntryPoints()
     {
         return entryPoints.values();
     }
 
-    public CallStackLevel addEntryPoint(String className, String methodName, int depth)
+    public CallStackLevel addEntryPoint(String location)
     {
-        CallStackLevel stack = new CallStackLevel(className, methodName, depth);
-        return entryPoints.get(stack);
+        CallStackLevel stack = entryPoints.get(location);
+        if (stack == null)
+        {
+            stack = new CallStackLevel(location);
+            entryPoints.put(location, stack);
+        }
+        return stack;
     }
 
 }

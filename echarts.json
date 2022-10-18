@@ -1,1 +1,21 @@
-/home/francois/f2/2.6.0/echarts.json
+var echarts_data=
+{"name":"echarts","value":"0", "children": [
+{"name":"org.jintruder.sampler.TestThreadSamplerToCallStack$2:run", "value":2538, "children":[
+{"name":"org.jintruder.sampler.TestThreadSamplerToCallStack$2:a", "value":2538, "children":[
+{"name":"java.lang.Thread:sleep", "value":52, "children":[
+]}
+,{"name":"org.jintruder.sampler.TestThreadSamplerToCallStack$2:b", "value":2486, "children":[
+{"name":"java.lang.Thread:sleep", "value":268, "children":[
+]}
+,{"name":"org.jintruder.sampler.TestThreadSamplerToCallStack$2:c", "value":975, "children":[
+{"name":"java.lang.Thread:sleep", "value":975, "children":[
+]}
+]}
+,{"name":"org.jintruder.sampler.TestThreadSamplerToCallStack$2:d", "value":1242, "children":[
+{"name":"java.lang.Thread:sleep", "value":1242, "children":[
+]}
+]}
+]}
+]}
+]}
+]}
