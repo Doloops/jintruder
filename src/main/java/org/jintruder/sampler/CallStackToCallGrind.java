@@ -23,17 +23,11 @@ public class CallStackToCallGrind
     {
     }
 
-    private final String protectMethodName(CallStackLevel level)
+    private final String protectLocation(CallStackLevel level)
     {
-        String methodName = level.getMethodName();
-        String result = methodName.replace('<', '_').replace('>', '_');
+        String location = level.getLocation();
+        String result = location.replace('<', '_').replace('>', '_').replace('/', '.').replace('$', '_');
         return result;
-    }
-
-    private final String protectClassName(CallStackLevel level)
-    {
-        String className = level.getClassName();
-        return className.replace('/', '.').replace('$', '_');
     }
 
     public void dumpPeriodically(ScheduledExecutorService scheduler, CallStack callStack, int intervalMs)
@@ -79,20 +73,20 @@ public class CallStackToCallGrind
 
     private void dump(PrintStream printStream, CallStackLevel level)
     {
-        printStream.println("fl=" + protectClassName(level));
-        printStream.println("fn=" + protectMethodName(level));
+        printStream.println("fl=" + "Java Class"); // protectClassName(level)
+        printStream.println("fn=" + protectLocation(level));
         printStream.println("0 " + level.getSelfCount());
         for (CallStackLevel child : level.getChildren())
         {
-            printStream.println("cfl=" + protectClassName(child));
-            printStream.println("cfn=" + protectMethodName(child));
+            printStream.println("cfl=" + "Java Class"); // protectClassName(child)
+            printStream.println("cfn=" + protectLocation(child));
             printStream.println("calls=" + 1 + " " + 0);
 
             long timeSpent = child.getCount();
             if (timeSpent <= 0)
             {
-                System.err.println("Spurious ! timeSpent=" + timeSpent + " in call : " + level.getClassAndMethodName()
-                        + "=>" + child.getClassAndMethodName());
+                System.err.println("Spurious ! timeSpent=" + timeSpent + " in call : " + level.getLocation() + "=>"
+                        + child.getLocation());
                 timeSpent = 1;
             }
             printStream.println("0 " + timeSpent);

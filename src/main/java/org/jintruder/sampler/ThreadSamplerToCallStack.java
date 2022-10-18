@@ -25,19 +25,18 @@ public class ThreadSamplerToCallStack
         {
             int depth = stackTrace.length - index;
             StackTraceElement element = stackTrace[index];
-            String className = element.getClassName();
-            String methodName = element.getMethodName();
+            String location = element.getClassName() + ":" + element.getMethodName();
 
             if (VERBOSE)
-                log("Stack [{0}] {1}:{2}:{3}", depth, className, methodName);
+                log("Stack [{0}] {1}", depth, location);
 
             if (current == null)
             {
-                current = callStack.addEntryPoint(className, methodName, depth);
+                current = callStack.addEntryPoint(location);
             }
             else
             {
-                current = current.addChild(className, methodName, depth);
+                current = current.addChild(location);
             }
             current.incrementCount();
         }
