@@ -3,7 +3,7 @@ import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 
 def JIRA_KEY = "JIN"
 def POM_PATH = "pom.xml"
-def DEVELOP_BRANCH = "master"
+def DEVELOP_BRANCH = "develop"
 def BUILD_CMD = "clean install -DskipITs -fn"
 def TAG_VERSION = null
 
