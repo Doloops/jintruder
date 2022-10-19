@@ -7,6 +7,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.jintruder.instrument.JintruderTransformer;
 import org.jintruder.sampler.CallStack;
 import org.jintruder.sampler.CallStackToJson;
+import org.jintruder.sampler.StackTraceFilter;
 import org.jintruder.sampler.ThreadSamplerToCallStack;
 
 public class JintruderPremain
@@ -28,8 +29,8 @@ public class JintruderPremain
     {
         ThreadSamplerToCallStack sampler = new ThreadSamplerToCallStack();
         CallStackToJson dumper = new CallStackToJson();
-        sampler.watchMultipleThreads(SCHEDULER, JintruderConfig.getSamplingThreadPattern(),
-                JintruderConfig.getSamplingInterval(), CALL_STACK);
+        StackTraceFilter filter = new StackTraceFilter(JintruderConfig.getSamplingThreadPattern(), null, null);
+        sampler.watchMultipleThreads(SCHEDULER, filter, JintruderConfig.getSamplingInterval(), CALL_STACK);
         if (JintruderConfig.getDumpInterval() > 0)
             dumper.dumpPeriodically(SCHEDULER, CALL_STACK, JintruderConfig.getDumpInterval());
     }

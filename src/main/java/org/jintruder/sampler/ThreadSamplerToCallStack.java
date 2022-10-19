@@ -5,7 +5,6 @@ import java.text.MessageFormat;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 import org.jintruder.sampler.CallStack.CallStackItem;
 
@@ -20,15 +19,27 @@ public class ThreadSamplerToCallStack
 
     public void mergeStackTrace(StackTraceElement[] stackTrace, CallStack callStack)
     {
+        mergeStackTrace(stackTrace, callStack, new StackTraceFilter(null, null, null));
+    }
+
+    public void mergeStackTrace(StackTraceElement[] stackTrace, CallStack callStack, StackTraceFilter filter)
+    {
         CallStackItem current = null;
+        boolean selectedStack = !filter.hasRequiredMethod();
         for (int index = stackTrace.length - 1; index >= 0; index--)
         {
-            int depth = stackTrace.length - index;
             StackTraceElement element = stackTrace[index];
             String location = element.getClassName() + ":" + element.getMethodName();
 
             if (VERBOSE)
-                log("Stack [{0}] {1}", depth, location);
+                log("Stack [{0}] {1}", index, location);
+
+            if (!selectedStack && filter.isRequiredMethod(location))
+                selectedStack = true;
+            if (!selectedStack)
+                continue;
+            if (filter.isSkippedMethod(location))
+                continue;
 
             if (current == null)
             {
@@ -89,10 +100,9 @@ public class ThreadSamplerToCallStack
 
     private Thread allThreads[] = new Thread[INITIAL_THREADS_ARRAY_SIZE];
 
-    public void watchMultipleThreads(ScheduledExecutorService scheduler, String patternString, long intervalMs,
+    public void watchMultipleThreads(ScheduledExecutorService scheduler, StackTraceFilter filter, long intervalMs,
             CallStack callStack)
     {
-        final Pattern pattern = patternString != null ? Pattern.compile(patternString) : null;
         scheduler.scheduleAtFixedRate(() -> {
             try
             {
@@ -104,18 +114,16 @@ public class ThreadSamplerToCallStack
                 }
                 for (Thread thread : allThreads)
                 {
-                    if (thread == null || thread.getName() == null)
+                    if (!filter.filterThread(thread))
                         continue;
                     if (thread.getName().startsWith("jintruder"))
-                        continue;
-                    if (pattern != null && !pattern.matcher(thread.getName()).matches())
                         continue;
                     StackTraceElement[] stack = thread.getStackTrace();
                     if (VERBOSE)
                         log("Taken stack of {0} elements for thread {1}", stack.length, thread.getName());
                     synchronized (callStack)
                     {
-                        mergeStackTrace(stack, callStack);
+                        mergeStackTrace(stack, callStack, filter);
                     }
                 }
             }
