@@ -1,27 +1,54 @@
 package org.jintruder.sampler;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class CallStack
 {
+    private static class LocationMap
+    {
+        private final Map<Integer, CallStackItem> children = new HashMap<Integer, CallStackItem>();
+
+        public Collection<CallStackItem> values()
+        {
+            return children.values();
+        }
+
+        public CallStackItem get(int location)
+        {
+            return children.get(location);
+        }
+
+        public void put(int location, CallStackItem item)
+        {
+            children.put(location, item);
+        }
+    }
+
     public static class CallStackItem
     {
-        private final String location;
+        private final int locationId;
 
         private long count;
 
-        private final Map<String, CallStackItem> children = new HashMap<String, CallStackItem>();
+        private final LocationMap children = new LocationMap();
 
-        public CallStackItem(String location)
+        public CallStackItem(int locationId)
         {
-            this.location = location;
+            this.locationId = locationId;
         }
 
         public long getCount()
         {
             return count;
+        }
+
+        public void setCount(long count)
+        {
+            this.count = count;
         }
 
         public void incrementCount()
@@ -34,15 +61,10 @@ public class CallStack
             return children.values();
         }
 
-        public String getLocation()
-        {
-            return location;
-        }
-
         @Override
         public int hashCode()
         {
-            return location.hashCode();
+            return locationId;
         }
 
         @Override
@@ -53,10 +75,10 @@ public class CallStack
                 return false;
             }
             CallStackItem other = (CallStackItem) o;
-            return location.equals(other.location);
+            return locationId == other.locationId;
         }
 
-        public CallStackItem addChild(String location)
+        private CallStackItem addChild(int location)
         {
             CallStackItem stack = children.get(location);
             if (stack == null)
@@ -71,14 +93,25 @@ public class CallStack
         {
             return count - children.values().stream().mapToLong(CallStackItem::getCount).sum();
         }
-
-        public void setCount(long count)
-        {
-            this.count = count;
-        }
     }
 
-    private final Map<String, CallStackItem> entryPoints = new HashMap<String, CallStackItem>();
+    private final Map<String, Integer> locationsDirectory = new HashMap<String, Integer>();
+
+    private final List<String> locations = new ArrayList<String>();
+
+    private int getLocationId(String location)
+    {
+        Integer id = locationsDirectory.get(location);
+        if (id == null)
+        {
+            locations.add(location);
+            id = locations.size() - 1;
+            locationsDirectory.put(location, id);
+        }
+        return id;
+    }
+
+    private final LocationMap entryPoints = new LocationMap();
 
     public Collection<CallStackItem> getEntryPoints()
     {
@@ -87,13 +120,24 @@ public class CallStack
 
     public CallStackItem addEntryPoint(String location)
     {
-        CallStackItem stack = entryPoints.get(location);
+        int locationId = getLocationId(location);
+        CallStackItem stack = entryPoints.get(locationId);
         if (stack == null)
         {
-            stack = new CallStackItem(location);
-            entryPoints.put(location, stack);
+            stack = new CallStackItem(locationId);
+            entryPoints.put(locationId, stack);
         }
         return stack;
     }
 
+    public CallStackItem addChild(CallStackItem item, String location)
+    {
+        int locationId = getLocationId(location);
+        return item.addChild(locationId);
+    }
+
+    public String getLocation(CallStackItem item)
+    {
+        return locations.get(item.locationId);
+    }
 }

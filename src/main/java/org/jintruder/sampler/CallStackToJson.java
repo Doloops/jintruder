@@ -62,17 +62,17 @@ public class CallStackToJson
                 first = false;
             else
                 printStream.print(",");
-            dump(printStream, level);
+            dump(printStream, callStack, level);
 
         }
         printStream.println("]}");
         printStream.close();
     }
 
-    private void dump(PrintStream printStream, CallStackItem level)
+    private void dump(PrintStream printStream, CallStack callStack, CallStackItem level)
     {
         printStream.print("{\"name\":\"");
-        printStream.print(level.getLocation());
+        printStream.print(callStack.getLocation(level));
         printStream.print("\", \"value\":");
         printStream.print(level.getCount());
         printStream.println(", \"children\":[");
@@ -84,7 +84,7 @@ public class CallStackToJson
                 first = false;
             else
                 printStream.print(",");
-            dump(printStream, child);
+            dump(printStream, callStack, child);
 
         }
         printStream.println("]}");

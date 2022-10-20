@@ -23,9 +23,9 @@ public class CallStackToCallGrind
     {
     }
 
-    private final String protectLocation(CallStackItem level)
+    private final String protectLocation(CallStack callStack, CallStackItem level)
     {
-        String location = level.getLocation();
+        String location = callStack.getLocation(level);
         String result = location.replace('<', '_').replace('>', '_').replace('/', '.').replace('$', '_');
         return result;
     }
@@ -66,34 +66,34 @@ public class CallStackToCallGrind
 
         for (CallStackItem level : callStack.getEntryPoints())
         {
-            dump(printStream, level);
+            dump(printStream, callStack, level);
         }
         printStream.close();
     }
 
-    private void dump(PrintStream printStream, CallStackItem level)
+    private void dump(PrintStream printStream, CallStack callStack, CallStackItem level)
     {
         printStream.println("fl=" + "Java Class"); // protectClassName(level)
-        printStream.println("fn=" + protectLocation(level));
+        printStream.println("fn=" + protectLocation(callStack, level));
         printStream.println("0 " + level.getSelfCount());
         for (CallStackItem child : level.getChildren())
         {
             printStream.println("cfl=" + "Java Class"); // protectClassName(child)
-            printStream.println("cfn=" + protectLocation(child));
+            printStream.println("cfn=" + protectLocation(callStack, child));
             printStream.println("calls=" + 1 + " " + 0);
 
             long timeSpent = child.getCount();
             if (timeSpent <= 0)
             {
-                System.err.println("Spurious ! timeSpent=" + timeSpent + " in call : " + level.getLocation() + "=>"
-                        + child.getLocation());
+                System.err.println("Spurious ! timeSpent=" + timeSpent + " in call : " + callStack.getLocation(level)
+                        + "=>" + callStack.getLocation(child));
                 timeSpent = 1;
             }
             printStream.println("0 " + timeSpent);
         }
         for (CallStackItem child : level.getChildren())
         {
-            dump(printStream, child);
+            dump(printStream, callStack, child);
         }
     }
 

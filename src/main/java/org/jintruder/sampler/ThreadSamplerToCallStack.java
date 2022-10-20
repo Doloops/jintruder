@@ -31,9 +31,6 @@ public class ThreadSamplerToCallStack
             StackTraceElement element = stackTrace[index];
             String location = element.getClassName() + ":" + element.getMethodName();
 
-            if (VERBOSE)
-                log("Stack [{0}] {1}", index, location);
-
             if (!selectedStack && filter.isRequiredMethod(location))
                 selectedStack = true;
             if (!selectedStack)
@@ -41,13 +38,16 @@ public class ThreadSamplerToCallStack
             if (filter.isSkippedMethod(location))
                 continue;
 
+            if (VERBOSE)
+                log("Stack [{0}] {1}", index, location);
+
             if (current == null)
             {
                 current = callStack.addEntryPoint(location);
             }
             else
             {
-                current = current.addChild(location);
+                current = callStack.addChild(current, location);
             }
             current.incrementCount();
         }

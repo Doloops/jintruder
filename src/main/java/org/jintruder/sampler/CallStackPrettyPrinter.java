@@ -2,23 +2,24 @@ package org.jintruder.sampler;
 
 public class CallStackPrettyPrinter
 {
-    public static String prettyPrintByEntryPoint(CallStack classMap)
+    public static String prettyPrintByEntryPoint(CallStack callStack)
     {
         StringBuilder builder = new StringBuilder();
 
-        for (CallStack.CallStackItem entryPoint : classMap.getEntryPoints())
+        for (CallStack.CallStackItem entryPoint : callStack.getEntryPoints())
         {
-            builder.append(entryPoint.getLocation());
+            builder.append(callStack.getLocation(entryPoint));
             builder.append(' ');
             builder.append(entryPoint.getCount());
             builder.append('\n');
 
-            prettyPrintCallStackLevel(builder, entryPoint, 0);
+            prettyPrintCallStackLevel(builder, callStack, entryPoint, 0);
         }
         return builder.toString();
     }
 
-    private static void prettyPrintCallStackLevel(StringBuilder builder, CallStack.CallStackItem level, int depth)
+    private static void prettyPrintCallStackLevel(StringBuilder builder, CallStack callStack,
+            CallStack.CallStackItem level, int depth)
     {
         for (CallStack.CallStackItem child : level.getChildren())
         {
@@ -26,12 +27,12 @@ public class CallStackPrettyPrinter
             {
                 builder.append("*  ");
             }
-            builder.append(child.getLocation());
+            builder.append(callStack.getLocation(level));
             builder.append(' ');
             builder.append(child.getCount());
             builder.append('\n');
 
-            prettyPrintCallStackLevel(builder, child, depth + 1);
+            prettyPrintCallStackLevel(builder, callStack, child, depth + 1);
 
         }
     }
