@@ -1,4 +1,4 @@
-package org.jintruder.sampler;
+package org.jintruder.model.sampler;
 
 import java.util.ArrayList;
 import java.util.Collection;

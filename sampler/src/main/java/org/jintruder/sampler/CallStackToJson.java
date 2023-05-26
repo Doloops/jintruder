@@ -1,18 +1,21 @@
 package org.jintruder.sampler;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.MessageFormat;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.jintruder.sampler.CallStack.CallStackItem;
+import org.jintruder.model.JintruderConfig;
+import org.jintruder.model.sampler.CallStack;
+import org.jintruder.model.sampler.CallStack.CallStackItem;
 
 public class CallStackToJson
 {
     private static final long EPOCH = System.currentTimeMillis();
 
-    private static final String DUMP_FILE_PATH = "echarts.json";
+    private static final String DUMP_FILE_PATH = JintruderConfig.getDumpFile();
 
     private static void log(String pattern, Object... vars)
     {
@@ -51,7 +54,9 @@ public class CallStackToJson
 
     private void dump(String fileName, CallStack callStack) throws IOException
     {
-        PrintStream printStream = new PrintStream(fileName);
+        File target = new File(fileName);
+        File tempFile = new File(fileName + ".tmp");
+        PrintStream printStream = new PrintStream(tempFile);
         printStream.println("var echarts_data=");
         printStream.println("{\"name\":\"echarts\",\"value\":\"0\", \"children\": [");
 
@@ -67,6 +72,14 @@ public class CallStackToJson
         }
         printStream.println("]}");
         printStream.close();
+
+        if (target.exists())
+        {
+            if (!target.delete())
+                log("Could not replace target file {}", target.getAbsolutePath());
+        }
+        if (!tempFile.renameTo(target))
+            log("Could not rename {} to {}", tempFile.getAbsolutePath(), target.getAbsolutePath());
     }
 
     private void dump(PrintStream printStream, CallStack callStack, CallStackItem level)

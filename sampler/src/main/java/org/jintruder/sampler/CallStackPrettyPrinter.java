@@ -1,5 +1,7 @@
 package org.jintruder.sampler;
 
+import org.jintruder.model.sampler.CallStack;
+
 public class CallStackPrettyPrinter
 {
     public static String prettyPrintByEntryPoint(CallStack callStack)

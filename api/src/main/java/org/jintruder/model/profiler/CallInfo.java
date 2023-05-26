@@ -1,4 +1,4 @@
-package org.jintruder.model;
+package org.jintruder.model.profiler;
 
 public class CallInfo
 {

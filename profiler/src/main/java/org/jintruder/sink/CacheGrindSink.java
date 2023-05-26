@@ -4,10 +4,11 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Map;
 
-import org.jintruder.model.CallInfo;
-import org.jintruder.model.ClassInfo;
-import org.jintruder.model.ClassMap;
-import org.jintruder.model.MethodInfo;
+import org.jintruder.model.profiler.CallInfo;
+import org.jintruder.model.profiler.ClassInfo;
+import org.jintruder.model.profiler.ClassMap;
+import org.jintruder.model.profiler.MethodInfo;
+import org.jintruder.model.sink.IntruderSink;
 
 public class CacheGrindSink implements IntruderSink
 {

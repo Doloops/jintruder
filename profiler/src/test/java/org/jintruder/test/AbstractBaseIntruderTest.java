@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
-import org.jintruder.instrument.JintruderTransformer;
+import org.jintruder.profiler.JintruderTransformer;
 
 public abstract class AbstractBaseIntruderTest
 {

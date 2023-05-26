@@ -1,4 +1,4 @@
-package org.jintruder.model;
+package org.jintruder.model.profiler;
 
 import java.util.Collection;
 import java.util.HashMap;

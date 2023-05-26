@@ -6,7 +6,8 @@ import java.text.MessageFormat;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.jintruder.sampler.CallStack.CallStackItem;
+import org.jintruder.model.sampler.CallStack;
+import org.jintruder.model.sampler.CallStack.CallStackItem;
 
 public class CallStackToCallGrind
 {
