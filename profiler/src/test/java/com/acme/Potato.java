@@ -46,7 +46,7 @@ public class Potato
     @Test
     public void testALot()
     {
-        for (long i = 0; i < 2_000_000_000; i++)
+        for (long i = 0; i < 2_000_000; i++)
         {
             cpuburnA(5);
             if (false)

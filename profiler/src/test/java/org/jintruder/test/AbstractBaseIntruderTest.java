@@ -11,10 +11,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.jintruder.model.JintruderConfig;
 import org.jintruder.profiler.JintruderTransformer;
+import org.junit.BeforeClass;
 
 public abstract class AbstractBaseIntruderTest
 {
+    @BeforeClass
+    public static void classInit()
+    {
+        JintruderConfig.enableProfiler();
+    }
+
     public static class ByteClassLoader extends URLClassLoader
     {
         private final Map<String, byte[]> extraClassDefs;

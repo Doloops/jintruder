@@ -88,7 +88,7 @@ public class TestPotato extends AbstractBaseIntruderTest
         Assert.assertTrue(methodInfo.getTotalTime() > 0);
 
         CallInfo burnA = methodInfo.getSubCall("cpuburnA");
-        Assert.assertEquals(2_000_000_000L, burnA.getNumber());
+        Assert.assertEquals(2_000_000L, burnA.getNumber());
         Assert.assertTrue(burnA.getTimeSpent() > 0);
 
         Assert.assertTrue(methodInfo.getTotalTime() >= burnA.getTimeSpent());

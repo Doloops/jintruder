@@ -60,13 +60,12 @@ public class JintruderTransformer implements ClassFileTransformer
 
     private final boolean isClassTraced(final String className)
     {
-        if (!JintruderConfig.isEnableDecoration())
+        if (!JintruderConfig.isEnableProfiler())
         {
             return false;
         }
 
-        if (className.startsWith("com/arondor/commons/jintruder") || className.startsWith("java/")
-                || className.startsWith("sun/"))
+        if (className.startsWith("org/jintruder") || className.startsWith("java/") || className.startsWith("sun/"))
         {
             return false;
         }

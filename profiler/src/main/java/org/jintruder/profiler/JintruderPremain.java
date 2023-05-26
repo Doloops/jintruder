@@ -13,9 +13,14 @@ public class JintruderPremain
     private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(4,
             new NamedThreadFactory("jintruder"));
 
+    static
+    {
+        JintruderConfig.enableProfiler();
+    }
+
     public static void premain(String agentArgs, Instrumentation inst)
     {
-        if (JintruderConfig.isEnableDecoration())
+        if (JintruderConfig.isEnableProfiler())
         {
             inst.addTransformer(new JintruderTransformer());
         }

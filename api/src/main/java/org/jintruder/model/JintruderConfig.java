@@ -36,14 +36,28 @@ public class JintruderConfig
         return VERBOSE;
     }
 
-    public static boolean isEnableDecoration()
+    private static boolean DEFAULT_ENABLE_PROFILER = false;
+
+    public static void enableProfiler()
     {
-        return getBooleanProperty("jintruder.decoration", false);
+        DEFAULT_ENABLE_PROFILER = true;
+    }
+
+    public static boolean isEnableProfiler()
+    {
+        return getBooleanProperty("jintruder.decoration", DEFAULT_ENABLE_PROFILER);
+    }
+
+    private static boolean DEFAULT_ENABLE_SAMPLER = false;
+
+    public static void enableSampler()
+    {
+        DEFAULT_ENABLE_SAMPLER = true;
     }
 
     public static boolean isEnableSampling()
     {
-        return getBooleanProperty("jintruder.sampling", true);
+        return getBooleanProperty("jintruder.sampling", DEFAULT_ENABLE_SAMPLER);
     }
 
     public static boolean isDumpBytecode()
