@@ -7,6 +7,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.jintruder.model.JintruderConfig;
 import org.jintruder.model.NamedThreadFactory;
 import org.jintruder.model.sampler.CallStack;
+import org.jintruder.model.sampler.StackTraceFilter;
 
 public class JintruderPremain
 {

@@ -7,6 +7,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.jintruder.model.sampler.CallStack;
+import org.jintruder.model.sampler.StackTraceFilter;
 import org.jintruder.model.sampler.CallStack.CallStackItem;
 
 public class ThreadSamplerToCallStack

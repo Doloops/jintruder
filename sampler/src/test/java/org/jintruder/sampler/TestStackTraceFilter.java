@@ -1,5 +1,6 @@
 package org.jintruder.sampler;
 
+import org.jintruder.model.sampler.StackTraceFilter;
 import org.junit.Assert;
 import org.junit.Test;
 
