@@ -53,6 +53,21 @@ public class CallStack
         {
             return className + ":" + methodName + "(" + line + ")";
         }
+
+        public static Location fromString(String value)
+        {
+            int clmnIndex = value.indexOf(':');
+            int parenthesisIndex = value.indexOf('(', clmnIndex);
+            int endIndex = value.indexOf(')', parenthesisIndex);
+            if (clmnIndex == -1 || parenthesisIndex == -1 || endIndex == -1 || endIndex != value.length() - 1)
+            {
+                throw new IllegalArgumentException("Invalid Location string: " + value);
+            }
+            String className = value.substring(0, clmnIndex);
+            String methodName = value.substring(clmnIndex + 1, parenthesisIndex);
+            int line = Integer.parseInt(value.substring(parenthesisIndex + 1, endIndex));
+            return new Location(className, methodName, line);
+        }
     }
 
     private static class LocationMap
