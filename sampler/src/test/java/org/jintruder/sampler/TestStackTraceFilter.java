@@ -20,4 +20,18 @@ public class TestStackTraceFilter
 
         Assert.assertTrue(filter.isSkippedMethod(toSkip));
     }
+
+    @Test
+    public void testRequiresMethod()
+    {
+        CallStack.Location toRequire = new CallStack.Location("com.fast2.worker.TaskWorker", "processPunnet", 813);
+
+        String threadString = null;
+        String requiresMethodString = "com.fast2.worker.TaskWorker" + ":processPunnet\\(.*" + "|"
+                + "com.fast2.worker.SourceWorker" + ":processCampaignSource\\(.*";
+        String skipsMethodString = null;
+        StackTraceFilter filter = new StackTraceFilter(threadString, requiresMethodString, skipsMethodString);
+
+        Assert.assertTrue(filter.isRequiredMethod(toRequire));
+    }
 }
