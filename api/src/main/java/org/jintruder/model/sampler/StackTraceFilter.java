@@ -1,6 +1,10 @@
 package org.jintruder.model.sampler;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
+
+import org.jintruder.model.sampler.CallStack.Location;
 
 public class StackTraceFilter
 {
@@ -31,13 +35,31 @@ public class StackTraceFilter
         return requiresMethodPattern != null;
     }
 
-    public final boolean isRequiredMethod(String location)
+    private final Map<CallStack.Location, Boolean> requiredMethods = new HashMap<CallStack.Location, Boolean>();
+
+    public final boolean isRequiredMethod(Location location)
     {
-        return requiresMethodPattern == null || requiresMethodPattern.matcher(location).matches();
+        if (requiresMethodPattern == null)
+            return true;
+        Boolean required = requiredMethods.get(location);
+        if (required != null)
+            return required;
+        required = requiresMethodPattern.matcher(location.toString()).matches();
+        requiredMethods.put(location, required);
+        return required;
     }
 
-    public final boolean isSkippedMethod(String location)
+    private final Map<CallStack.Location, Boolean> skippedMethods = new HashMap<CallStack.Location, Boolean>();
+
+    public final boolean isSkippedMethod(Location location)
     {
-        return skipsMethodPattern != null && skipsMethodPattern.matcher(location).matches();
+        if (skipsMethodPattern == null)
+            return false;
+        Boolean skipped = skippedMethods.get(location);
+        if (skipped != null)
+            return skipped;
+        skipped = skipsMethodPattern.matcher(location.toString()).matches();
+        skippedMethods.put(location, skipped);
+        return skipped;
     }
 }

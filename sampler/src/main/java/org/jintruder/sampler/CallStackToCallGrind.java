@@ -26,7 +26,7 @@ public class CallStackToCallGrind
 
     private final String protectLocation(CallStack callStack, CallStackItem level)
     {
-        String location = callStack.getLocation(level);
+        String location = callStack.getLocation(level).toString();
         String result = location.replace('<', '_').replace('>', '_').replace('/', '.').replace('$', '_');
         return result;
     }

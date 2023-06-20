@@ -7,8 +7,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.jintruder.model.sampler.CallStack;
-import org.jintruder.model.sampler.StackTraceFilter;
 import org.jintruder.model.sampler.CallStack.CallStackItem;
+import org.jintruder.model.sampler.StackTraceFilter;
 
 public class ThreadSamplerToCallStack
 {
@@ -31,7 +31,8 @@ public class ThreadSamplerToCallStack
         for (int index = stackTrace.length - 1; index >= 0; index--)
         {
             StackTraceElement element = stackTrace[index];
-            String location = element.getClassName() + ":" + element.getMethodName();
+            CallStack.Location location = new CallStack.Location(element.getClassName(), element.getMethodName(),
+                    element.getLineNumber());
 
             if (!selectedStack && filter.isRequiredMethod(location))
                 selectedStack = true;
@@ -68,6 +69,10 @@ public class ThreadSamplerToCallStack
 
             private long totalTook = 0;
 
+            private long getStackTraceTook = 0;
+
+            private long mergeStackTraceTook = 0;
+
             @Override
             public void run()
             {
@@ -78,14 +83,20 @@ public class ThreadSamplerToCallStack
                 else if (newThread.getState() == State.TERMINATED)
                 {
                     long threadLife = threadLast - threadStart;
-                    log("Watched thread for {0}ns, took {1} samples, total time to capture {2}ns, average {3}ns per sample",
-                            threadLife, samples, totalTook, totalTook / samples);
+                    log("Watched thread for {0}ns, took {1} samples, total time to capture {2}ns, average {3}ns per sample, took average {4}ns to take stack traces and {5}ns to merge",
+                            threadLife, samples, totalTook, totalTook / samples, getStackTraceTook / samples,
+                            mergeStackTraceTook / samples);
                     scheduler.shutdown();
                     return;
                 }
                 else
                 {
-                    mergeStackTrace(newThread.getStackTrace(), callStack);
+                    long getStack_start = System.nanoTime();
+                    StackTraceElement[] stackTrace = newThread.getStackTrace();
+                    long getStack_end = System.nanoTime();
+                    getStackTraceTook += (getStack_end - getStack_start);
+                    mergeStackTrace(stackTrace, callStack);
+                    mergeStackTraceTook += (System.nanoTime() - getStack_end);
                     samples++;
                 }
                 if (threadStart == 0)

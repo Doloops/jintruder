@@ -1,5 +1,6 @@
 package org.jintruder.sampler;
 
+import org.jintruder.model.sampler.CallStack;
 import org.jintruder.model.sampler.StackTraceFilter;
 import org.junit.Assert;
 import org.junit.Test;
@@ -9,7 +10,8 @@ public class TestStackTraceFilter
     @Test
     public void testSkipMethod()
     {
-        String toSkip = "com.fast2.worker.SourceWorker$$Lambda$551/0x0000000840841c40:apply";
+        CallStack.Location toSkip = new CallStack.Location(
+                "com.fast2.worker.SourceWorker$$Lambda$551/0x0000000840841c40", "apply", 23);
 
         String threadString = null;
         String requiresMethodString = null;

@@ -5,10 +5,6 @@ import java.text.MessageFormat;
 import org.jintruder.model.profiler.ClassMap;
 import org.jintruder.model.profiler.ClassMapPrettyPrinter;
 import org.jintruder.model.sampler.CallStack;
-import org.jintruder.sampler.CallStackPrettyPrinter;
-import org.jintruder.sampler.CallStackToJson;
-import org.jintruder.sampler.ThreadSamplerToCallStack;
-import org.jintruder.sampler.ThreadSamplerToModel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -151,6 +147,7 @@ public class TestThreadSamplerToCallStack
                     }
                     c();
                     d();
+                    c();
                 }
             }
 
@@ -196,4 +193,5 @@ public class TestThreadSamplerToCallStack
         // new CallStackToCallGrind().dumpAll(callStack);
         new CallStackToJson().dumpAll(callStack);
     }
+
 }

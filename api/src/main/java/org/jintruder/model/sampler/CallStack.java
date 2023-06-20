@@ -1,28 +1,75 @@
 package org.jintruder.model.sampler;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class CallStack
 {
+    public static class Location
+    {
+        private final String className;
+
+        private final String methodName;
+
+        private final int line;
+
+        private final int hashCode;
+
+        public Location(String className, String methodName, int line)
+        {
+            this.className = className;
+            this.methodName = methodName;
+            this.line = line;
+            this.hashCode = (className.hashCode() << 7) | methodName.hashCode() + (line << 28);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return hashCode;
+        }
+
+        @Override
+        public boolean equals(Object other_)
+        {
+            if (this == other_)
+                return true;
+            if (!(other_ instanceof Location))
+                return false;
+            Location other = (Location) other_;
+            boolean eq = className.equals(other.className) && methodName.equals(other.methodName) && line == other.line;
+            boolean strEq = toString().equals(other.toString());
+            if (eq != strEq)
+            {
+                throw new IllegalArgumentException(
+                        "Invalid equals() : this=" + toString() + ", other=" + other.toString());
+            }
+            return eq;
+        }
+
+        @Override
+        public String toString()
+        {
+            return className + ":" + methodName + "(" + line + ")";
+        }
+    }
+
     private static class LocationMap
     {
-        private final Map<Integer, CallStackItem> children = new HashMap<Integer, CallStackItem>();
+        private final Map<Location, CallStackItem> children = new HashMap<Location, CallStackItem>();
 
         public Collection<CallStackItem> values()
         {
             return children.values();
         }
 
-        public CallStackItem get(int location)
+        public CallStackItem get(Location location)
         {
             return children.get(location);
         }
 
-        public void put(int location, CallStackItem item)
+        public void put(Location location, CallStackItem item)
         {
             children.put(location, item);
         }
@@ -30,15 +77,15 @@ public class CallStack
 
     public static class CallStackItem
     {
-        private final int locationId;
+        private final Location location;
 
         private long count;
 
         private final LocationMap children = new LocationMap();
 
-        public CallStackItem(int locationId)
+        public CallStackItem(Location location)
         {
-            this.locationId = locationId;
+            this.location = location;
         }
 
         public long getCount()
@@ -64,7 +111,7 @@ public class CallStack
         @Override
         public int hashCode()
         {
-            return locationId;
+            return location.hashCode();
         }
 
         @Override
@@ -75,10 +122,10 @@ public class CallStack
                 return false;
             }
             CallStackItem other = (CallStackItem) o;
-            return locationId == other.locationId;
+            return location == other.location;
         }
 
-        private CallStackItem addChild(int location)
+        private CallStackItem addChild(Location location)
         {
             CallStackItem stack = children.get(location);
             if (stack == null)
@@ -95,22 +142,6 @@ public class CallStack
         }
     }
 
-    private final Map<String, Integer> locationsDirectory = new HashMap<String, Integer>();
-
-    private final List<String> locations = new ArrayList<String>();
-
-    private int getLocationId(String location)
-    {
-        Integer id = locationsDirectory.get(location);
-        if (id == null)
-        {
-            locations.add(location);
-            id = locations.size() - 1;
-            locationsDirectory.put(location, id);
-        }
-        return id;
-    }
-
     private final LocationMap entryPoints = new LocationMap();
 
     public Collection<CallStackItem> getEntryPoints()
@@ -118,26 +149,24 @@ public class CallStack
         return entryPoints.values();
     }
 
-    public CallStackItem addEntryPoint(String location)
+    public CallStackItem addEntryPoint(Location location)
     {
-        int locationId = getLocationId(location);
-        CallStackItem stack = entryPoints.get(locationId);
+        CallStackItem stack = entryPoints.get(location);
         if (stack == null)
         {
-            stack = new CallStackItem(locationId);
-            entryPoints.put(locationId, stack);
+            stack = new CallStackItem(location);
+            entryPoints.put(location, stack);
         }
         return stack;
     }
 
-    public CallStackItem addChild(CallStackItem item, String location)
+    public CallStackItem addChild(CallStackItem item, Location location)
     {
-        int locationId = getLocationId(location);
-        return item.addChild(locationId);
+        return item.addChild(location);
     }
 
-    public String getLocation(CallStackItem item)
+    public Location getLocation(CallStackItem item)
     {
-        return locations.get(item.locationId);
+        return item.location;
     }
 }
